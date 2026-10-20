@@ -1,0 +1,20 @@
+[
+  {"id": "svc-ai-automation", "type": "service", "name": "AI Automation", "url": "https://www.cynbit.in/services",
+   "text": "Autonomous AI agents for lead management and coordination, LLM document and data-entry automation, voice agents, chatbots, and AI embedded into a client's existing SaaS stack. Built with Python, FastAPI, OpenAI, LangChain, PyTorch and Pinecone."},
+  {"id": "svc-software", "type": "service", "name": "Software Development", "url": "https://www.cynbit.in/services",
+   "text": "Full-stack web and mobile development, backend APIs, dashboards, custom business platforms, MVP builds and legacy system migration. Stack includes Python, FastAPI, Postgres and Supabase."},
+  {"id": "svc-cloud", "type": "service", "name": "Cloud Systems", "url": "https://www.cynbit.in/services",
+   "text": "Cloud infrastructure and deployment on AWS and Azure, cloud migration, scalable and secure architecture, uptime and zero-trust deployment."},
+  {"id": "svc-seo-marketing", "type": "service", "name": "Technical SEO and Digital Marketing", "url": "https://www.cynbit.in/services",
+   "text": "Technical SEO, performance ads, CRM automation, funnel optimisation, organic lead growth and search ranking improvements."},
+  {"id": "prod-studio", "type": "product", "name": "Cynbit Studio", "url": "https://www.cynbit.in/products#cynbit-studio",
+   "text": "Career intelligence and edtech SaaS: adaptive placement tests, AI code evaluation, AI mentor, mock interviews, resume engine and job matching. Suited to colleges, training institutes and placement cells."},
+  {"id": "prod-revio", "type": "product", "name": "Revio", "url": "https://www.cynbit.in/products#revio",
+   "text": "AI review management assistant: cross-platform review sync, AI-drafted replies, sentiment analysis and crisis detection. Suited to restaurants, hotels, clinics, local businesses and retail brands with online reviews."},
+  {"id": "prod-tenantease", "type": "product", "name": "TenantEase", "url": "https://www.cynbit.in/products#tenantease",
+   "text": "Property and tenant management SaaS: rent tracking, automatic reminders, tenant records and a landlord dashboard. Suited to landlords, property managers and housing companies."},
+  {"id": "prog-bitelevate", "type": "program", "name": "BitElevate", "url": "https://www.cynbit.in/bitelevate",
+   "text": "Training and internship program for students and early-career engineers with tracks such as AI, ML, NLP, data science and full-stack development, mentorship and industry projects. Not a client service; route student or internship inquiries here."},
+  {"id": "ops-process", "type": "process", "name": "Engagement process", "url": "https://www.cynbit.in/",
+   "text": "Six steps: discovery and audit, strategy and blueprinting, high-fidelity design, technical implementation, quality and integrity check, deployment and evolution. Discovery is the entry point via the contact page."}
+]
