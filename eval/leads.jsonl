@@ -1,0 +1,30 @@
+{"id":1,"text":"Hi, I'm the founder of Kiran Foods. We get 300+ WhatsApp orders a day and our team copies them into Excel by hand. We want an AI agent to read the messages and fill our order sheet. Budget is around 4 lakh and we want to start this month.","intent":"client_project","service":"svc-ai-automation","tier":"hot"}
+{"id":2,"text":"Looking for a mobile app for our gym chain, 6 branches, with bookings and payments. Budget 8 lakhs, need MVP in 3 months.","intent":"client_project","service":"svc-software","tier":"hot"}
+{"id":3,"text":"We run 12 restaurants in Jaipur and manage Google reviews manually. Interested in a demo of Revio. ASAP please.","intent":"product_interest","service":"prod-revio","tier":"hot"}
+{"id":4,"text":"I own 40 flats and collecting rent is a pain. Want pricing for TenantEase.","intent":"product_interest","service":"prod-tenantease","tier":"warm"}
+{"id":5,"text":"Hello, I am a B.Tech 3rd year student, want to join the AI internship at BitElevate. Please share details.","intent":"student_program","service":"prog-bitelevate","tier":"cold"}
+{"id":6,"text":"We offer guest post and backlinks for sale on high DA sites. Reply for rate card.","intent":"not_a_fit","service":null,"tier":"cold"}
+{"id":7,"text":"Our website ranks nowhere on Google. We need SEO and ads for our dental clinic. Budget 40k per month. Within 2 weeks if possible.","intent":"client_project","service":"svc-seo-marketing","tier":"hot"}
+{"id":8,"text":"Just exploring what AI can do for our business, no rush. Maybe something with chatbots someday.","intent":"client_project","service":"svc-ai-automation","tier":"cold"}
+{"id":9,"text":"We need to migrate our legacy PHP ERP to a modern stack on AWS. About 12 lakh budget, planning for next quarter.","intent":"client_project","service":"svc-software","tier":"hot"}
+{"id":10,"text":"Need a website.","intent":"client_project","service":"svc-software","tier":"cold"}
+{"id":11,"text":"Our college placement cell wants an adaptive coding test platform with mock interviews for 2000 students. Budget 5 lakh, before the next placement season in 2 months.","intent":"product_interest","service":"prod-studio","tier":"hot"}
+{"id":12,"text":"We are a logistics startup and want a voice agent that calls customers to confirm deliveries. Budget around 3 lakh. Planning in the next quarter.","intent":"client_project","service":"svc-ai-automation","tier":"hot"}
+{"id":13,"text":"Can you do AWS cost optimization? Our bill is too high. Urgent, this week.","intent":"client_project","service":"svc-cloud","tier":"warm"}
+{"id":14,"text":"Selling you a database of 50,000 verified emails for lead generation. Cheap price.","intent":"not_a_fit","service":null,"tier":"cold"}
+{"id":15,"text":"I want to learn machine learning, do you have a bootcamp or training for freshers?","intent":"student_program","service":"prog-bitelevate","tier":"cold"}
+{"id":16,"text":"We are a hotel group with 5 properties. Our negative reviews on Google and Booking are hurting us and we need sentiment alerts and auto replies. Budget 1 lakh. Within 3 weeks.","intent":"product_interest","service":"prod-revio","tier":"hot"}
+{"id":17,"text":"Looking for dashboard development for our sales data. Budget 60,000 INR. No timeline yet.","intent":"client_project","service":"svc-software","tier":"warm"}
+{"id":18,"text":"Our invoices arrive as PDFs and scans and we type them into Tally. Want an LLM based document extraction automation. Budget 2.5 lakh, start next month.","intent":"client_project","service":"svc-ai-automation","tier":"hot"}
+{"id":19,"text":"I manage 8 PG hostels. Tenants forget rent and I need reminders and a dashboard. Budget not decided. Want a demo.","intent":"product_interest","service":"prod-tenantease","tier":"warm"}
+{"id":20,"text":"Hi, we need a custom CRM with WhatsApp integration for our real estate firm. Budget 3 lakh. Timeline 2 months.","intent":"client_project","service":"svc-software","tier":"hot"}
+{"id":21,"text":"Do you provide internship for BCA students in Jaipur? I am a fresher and want to apply for the internship.","intent":"student_program","service":"prog-bitelevate","tier":"cold"}
+{"id":22,"text":"We want to increase organic traffic for our ecommerce store and improve our funnel. Budget 1.5 lakh over 3 months.","intent":"client_project","service":"svc-seo-marketing","tier":"warm"}
+{"id":23,"text":"Our SaaS needs an AI support chatbot using our docs (RAG) integrated into the app. Budget around $4000. We want to launch in 6 weeks.","intent":"client_project","service":"svc-ai-automation","tier":"hot"}
+{"id":24,"text":"Hello, partnership proposal for our services: we do outsourced video editing, let's collaborate.","intent":"not_a_fit","service":null,"tier":"cold"}
+{"id":25,"text":"Can someone call me about hosting? We want to move our site to Azure, not sure about budget, maybe 30k.","intent":"client_project","service":"svc-cloud","tier":"warm"}
+{"id":26,"text":"Need an AI.","intent":"client_project","service":"svc-ai-automation","tier":"cold"}
+{"id":27,"text":"We are building a fintech MVP: web app and backend APIs with KYC. Budget 10 lakh, urgent, investors meeting in 4 weeks.","intent":"client_project","service":"svc-software","tier":"hot"}
+{"id":28,"text":"We run a coaching institute and want to automate student doubt answering with AI. Budget 80k. Just researching options for now.","intent":"client_project","service":"svc-ai-automation","tier":"warm"}
+{"id":29,"text":"Interested in a trial of Cynbit Studio for our 500 student institute for resume building and job matching. Budget 2 lakh, within 2 months.","intent":"product_interest","service":"prod-studio","tier":"hot"}
+{"id":30,"text":"Please help, our small cafe wants a simple website with menu and location. Budget 15000.","intent":"client_project","service":"svc-software","tier":"cold"}

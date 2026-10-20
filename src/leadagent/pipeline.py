@@ -1,0 +1,48 @@
+"""End-to-end pipeline: extract -> retrieve -> score -> brief."""
+from __future__ import annotations
+
+from . import llm
+from .brief import template_brief
+from .extract import extract_rules
+from .retrieval import Retriever
+from .schema import LeadReport
+from .scoring import score_lead
+
+_retriever: Retriever | None = None
+
+
+def _get_retriever() -> Retriever:
+    global _retriever
+    if _retriever is None:
+        _retriever = Retriever()
+    return _retriever
+
+
+def process_lead(text: str, use_llm: bool = True) -> LeadReport:
+    r = _get_retriever()
+    lead = llm.extract_llm(text) if use_llm else None
+    mode = "llm" if lead else "rules"
+    if lead is None:
+        lead = extract_rules(text)
+
+    # Retrieve with the raw text plus the extracted summary so short inquiries still match.
+    matches = r.search(text + " " + lead.need_summary, k=3)
+
+    # Prefer an explicit service hint when present, otherwise the top retrieval hit.
+    primary = None
+    if lead.intent in {"client_project", "product_interest", "student_program"}:
+        if lead.intent == "student_program":
+            primary = "prog-bitelevate"
+        elif lead.service_hints:
+            primary = lead.service_hints[0]
+        elif matches:
+            primary = matches[0].id
+        if primary and matches and primary not in {m.id for m in matches}:
+            pass  # keep retrieval list as supporting evidence
+
+    score = score_lead(lead, matches)
+    kb_docs = {d["id"]: d["text"] for d in r.docs}
+    brief = (llm.brief_llm(text, lead, matches, kb_docs, score) if use_llm else None) \
+        or template_brief(text, lead, matches, score, primary)
+    return LeadReport(extracted=lead, matches=matches, primary_service=primary,
+                      score=score, brief=brief, mode=mode)
