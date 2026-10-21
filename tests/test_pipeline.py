@@ -21,6 +21,7 @@ def test_urgency():
     assert parse_urgency("need this ASAP")[0] == "high"
     assert parse_urgency("start this month") == ("high", True)
     assert parse_urgency("this month") == ("high", True)
+    assert parse_urgency("start next month") == ("high", True)
     assert parse_urgency("no rush, just exploring")[0] == "low"
 
 
@@ -32,7 +33,7 @@ def test_unnamed_product_intent_from_top_hint():
     assert classify_intent("Please help manage Google reviews for my restaurant") == "product_interest"
 
 
-def test_ollama_strips_think_block(monkeypatch):
+def test_ollama_think_block_is_stripped_before_validation(monkeypatch):
     import json
     from leadagent import llm
 
@@ -40,10 +41,16 @@ def test_ollama_strips_think_block(monkeypatch):
         def __enter__(self): return self
         def __exit__(self, *args): return False
         def read(self):
-            return json.dumps({"message": {"content": '<think>hidden reasoning</think>{"intent":"client_project"}'}}).encode()
+            return json.dumps({"message": {"content": '<think>hidden reasoning</think>{"company":null,"need_summary":"Need rent reminders"}'}}).encode()
 
-    monkeypatch.setattr(llm.urllib.request, "urlopen", lambda *args, **kwargs: Response())
-    assert llm._ollama_chat([], 0) == '{"intent":"client_project"}'
+    monkeypatch.setattr(llm, "available", lambda: True)
+    monkeypatch.setattr(
+        llm.urllib.request, "urlopen",
+        lambda *args, **kwargs: Response(),
+    )
+    result = llm.extract_llm("Need rent reminders for flats")
+    assert result is not None
+    assert result.need_summary == "Need rent reminders"
 
 
 def test_spam_is_cold():
@@ -71,9 +78,80 @@ def test_vague_is_cold():
     assert process_lead("Need a website.", use_llm=False).score.tier == "cold"
 
 
+def test_pipeline_defaults_to_rules():
+    assert process_lead("Need a website.").mode == "rules"
+
+
 def test_service_discovery_question_bank_is_specific():
     from leadagent.brief import service_discovery_questions
     assert "How many properties and tenants do you manage?" in service_discovery_questions("prod-tenantease")
+    invoice_questions = service_discovery_questions(
+        "svc-ai-automation", "We process invoices in PDF into Tally"
+    )
+    assert any("invoices" in question and "formats" in question for question in invoice_questions)
+    voice_questions = service_discovery_questions(
+        "svc-ai-automation", "Need a voice receptionist for phone calls"
+    )
+    assert any("calls" in question and "transfer" in question for question in voice_questions)
+
+
+def test_invoice_automation_is_hot_and_matched():
+    inquiry = (
+        "Our invoices arrive as PDFs and scans and we type them into Tally. "
+        "Want an LLM based document extraction automation. Budget 2.5 lakh, start next month."
+    )
+    from leadagent.extract import extract_rules
+    rules = extract_rules(inquiry)
+    report = process_lead(inquiry, use_llm=False)
+    assert "svc-ai-automation" in rules.service_hints
+    assert rules.urgency == "high"
+    assert report.primary_service == "svc-ai-automation"
+    assert report.score.tier == "hot"
+
+
+def test_hinglish_invoice_terms_match_automation():
+    from leadagent.extract import extract_rules
+    lead = extract_rules("Invoices scan karke Tally mein entry chahiye, budget 2 lakh.")
+    assert lead.budget_inr == 200_000
+    assert "svc-ai-automation" in lead.service_hints
+
+
+def test_invalid_model_intent_and_service_cannot_override_rules(monkeypatch):
+    import json
+    from leadagent import llm
+
+    monkeypatch.setattr(llm, "available", lambda: True)
+    monkeypatch.setattr(llm, "_ollama_chat", lambda *args, **kwargs: json.dumps({
+        "company": "Acme",
+        "need_summary": "Manage Google reviews for a restaurant.",
+        "intent": "not_a_real_intent",
+        "service_hints": ["bad-service-id"],
+    }))
+    monkeypatch.setattr(llm, "brief_llm", lambda *args, **kwargs: None)
+    report = process_lead("Please help manage Google reviews for my restaurant", use_llm=True)
+    assert report.extracted.intent == "product_interest"
+    assert report.extracted.service_hints[0] == "prod-revio"
+
+
+def test_invalid_model_json_falls_back_to_rule_extraction(monkeypatch):
+    from leadagent import llm
+    monkeypatch.setattr(llm, "available", lambda: True)
+    monkeypatch.setattr(llm, "_ollama_chat", lambda *args, **kwargs: "not valid JSON")
+    monkeypatch.setattr(llm, "brief_llm", lambda *args, **kwargs: None)
+    report = process_lead("Need a website.", use_llm=True)
+    assert report.mode == "rules"
+    assert report.extracted.intent == "client_project"
+    assert report.primary_service == "svc-software"
+
+
+def test_rules_keep_two_sentence_need_summary_under_300_chars():
+    from leadagent.extract import extract_rules
+    text = "First sentence gives the concrete workflow. Second sentence adds an important integration detail. Third sentence is extra context."
+    summary = extract_rules(text).need_summary
+    assert summary.startswith("First sentence")
+    assert "Second sentence" in summary
+    assert "Third sentence" not in summary
+    assert len(summary) <= 300
 
 
 def test_reason_for_midrange_clarity_is_not_too_blunt():

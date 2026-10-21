@@ -3,7 +3,7 @@
 Two implementations share one output schema:
   * rules: deterministic regex/keyword extractor. Works offline, used as the fallback and
     as the baseline in the eval.
-  * llm:   OpenAI structured-output extraction (see llm.py).
+  * model: optional Ollama enrichment for company and need summary (see llm.py).
 """
 from __future__ import annotations
 
@@ -20,6 +20,8 @@ SERVICE_KEYWORDS = {
     "svc-ai-automation": [
         "ai", "llm", "agent", "agents", "chatbot", "automation", "automate", "gpt", "voice",
         "rag", "machine learning", "ml", "openai", "workflow", "ocr", "data entry",
+        "invoice", "invoices", "pdf", "pdfs", "scan", "scans", "tally", "excel",
+        "spreadsheet", "manually", "extract", "reads them",
     ],
     "svc-software": [
         "website", "web app", "mobile app", "app", "dashboard", "portal", "crm", "erp", "mvp",
@@ -29,7 +31,8 @@ SERVICE_KEYWORDS = {
     "svc-seo-marketing": [
         "seo", "ranking", "organic", "ads", "marketing", "traffic", "funnel", "google ads", "leads",
     ],
-    "prod-revio": ["reviews", "review", "google reviews", "reputation", "ratings", "zomato"],
+    "prod-revio": ["reviews", "review", "google reviews", "reputation", "ratings", "zomato",
+                   "feedback", "auto replies", "negative comments", "sentiment"],
     "prod-tenantease": ["tenant", "tenants", "rent", "landlord", "property", "pg ", "flats"],
     "prod-studio": ["placement", "placement cell", "mock interview", "resume", "coding test", "campus"],
     "prog-bitelevate": ["internship", "intern", "training", "course", "bootcamp", "student", "btech", "b.tech"],
@@ -136,11 +139,12 @@ def extract_company(text: str) -> Optional[str]:
 
 def extract_rules(text: str) -> ExtractedLead:
     urgency, has_tl = parse_urgency(text)
-    first = re.split(r"(?<=[.!?])\s+", text.strip())[0][:220]
+    sentences = re.split(r"(?<=[.!?])\s+", text.strip())
+    summary = " ".join(sentences[:2])[:300]
     return ExtractedLead(
         company=extract_company(text),
         intent=classify_intent(text),
-        need_summary=first,
+        need_summary=summary,
         budget_inr=parse_budget_inr(text),
         urgency=urgency,
         has_timeline=has_tl,

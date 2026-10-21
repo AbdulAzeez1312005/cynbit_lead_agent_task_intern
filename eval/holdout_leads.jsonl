@@ -1,0 +1,10 @@
+{"id":101,"text":"Our accounts staff key supplier bills from PDF into Tally by hand. Could you read them and populate the spreadsheet?","intent":"client_project","service":"svc-ai-automation","tier":"warm"}
+{"id":102,"text":"Mere clinic ke liye appointment calls answer karne wala voice bot chahiye. Budget 3 lakh, start this month.","intent":"client_project","service":"svc-ai-automation","tier":"hot"}
+{"id":103,"text":"We need a public website and an internal CRM that sends WhatsApp reminders to our field team.","intent":"client_project","service":"svc-software","tier":"warm"}
+{"id":104,"text":"We are considering ways to improve local search for our Jaipur restaurant; still researching, no rush.","intent":"client_project","service":"svc-seo-marketing","tier":"warm"}
+{"id":105,"text":"Customers leave feedback on Google and we want polite automatic replies plus an alert for negative comments.","intent":"product_interest","service":"prod-revio","tier":"warm"}
+{"id":106,"text":"Main BCA student hoon aur AI internship ke liye apply karna chahta hoon. Please share details.","intent":"student_program","service":"prog-bitelevate","tier":"cold"}
+{"id":107,"text":"We sell a database of 50,000 verified emails for Indian companies. Interested? Reply for our price list.","intent":"not_a_fit","service":null,"tier":"cold"}
+{"id":108,"text":"Our AWS bill has doubled and the team needs a cost review this week. Budget is not set yet.","intent":"client_project","service":"svc-cloud","tier":"hot"}
+{"id":109,"text":"Need an app.","intent":"client_project","service":"svc-software","tier":"cold"}
+{"id":110,"text":"We need an operations dashboard, OCR for invoice PDFs into Excel, and an AWS deployment. Budget 6 lakh, deadline in 3 weeks.","intent":"client_project","service":"svc-ai-automation","tier":"hot"}

@@ -24,6 +24,13 @@ class ExtractedLead(BaseModel):
     service_hints: list[str] = Field(default_factory=list)
 
 
+class LeadEnrichment(BaseModel):
+    """Optional model-written fields; these never drive routing or scoring."""
+
+    company: Optional[str] = None
+    need_summary: str = ""
+
+
 class KBMatch(BaseModel):
     id: str
     name: str
@@ -45,4 +52,4 @@ class LeadReport(BaseModel):
     primary_service: Optional[str]
     score: ScoreResult
     brief: str
-    mode: Literal["rules", "llm"]
+    mode: Literal["rules", "hybrid"]

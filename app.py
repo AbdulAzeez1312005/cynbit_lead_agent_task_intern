@@ -1,7 +1,7 @@
 """Streamlit demo: paste an inbound inquiry, get a scored lead and a discovery brief.
 
 Run:  streamlit run app.py
-Set OPENAI_API_KEY to enable LLM mode; without it the app runs the offline rules pipeline.
+Install Ollama and pull qwen3:1.7b for optional enrichment and brief drafting; decisions stay rule-based.
 """
 import sys
 from pathlib import Path
@@ -29,6 +29,10 @@ SAMPLES = {
     "Student internship (route to BitElevate)": (
         "Hello, I am a B.Tech 3rd year student, want to join the AI internship at BitElevate."
     ),
+    "Invoice document automation (hot)": (
+        "Our invoices arrive as PDFs and scans and we type them into Tally. Want an LLM based "
+        "document extraction automation. Budget 2.5 lakh, start next month."
+    ),
     "Vendor spam": "We offer guest post and backlinks for sale on high DA sites. Reply for rate card.",
 }
 
@@ -38,9 +42,9 @@ st.caption("Proof of concept: extract, retrieve, score, brief. Built from Cynbit
 with st.sidebar:
     st.header("Settings")
     llm_ready = llm.available()
-    use_llm = st.toggle("Use LLM (OpenAI)", value=llm_ready, disabled=not llm_ready)
+    use_llm = st.toggle("Use Ollama enrichment and brief", value=False, disabled=not llm_ready)
     if not llm_ready:
-        st.info("No OPENAI_API_KEY found, running the offline rules pipeline.")
+        st.info("Ollama is unavailable or qwen3:1.7b is not pulled. Using rules and the template brief.")
     st.markdown("**Sample inquiries**")
     choice = st.selectbox("Load a sample", ["(none)"] + list(SAMPLES))
 

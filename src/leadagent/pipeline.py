@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from . import llm
 from .brief import template_brief
-from .extract import extract_rules, SERVICE_KEYWORDS
+from .extract import extract_rules
 from .retrieval import Retriever
 from .schema import LeadReport
 from .scoring import score_lead
@@ -18,25 +18,21 @@ def _get_retriever() -> Retriever:
     return _retriever
 
 
-def process_lead(text: str, use_llm: bool = True, hybrid: bool = True) -> LeadReport:
+def process_lead(text: str, use_llm: bool = False, hybrid: bool = True) -> LeadReport:
     r = _get_retriever()
     rules_lead = extract_rules(text)
-    lead = llm.extract_llm(text) if use_llm else None
-    mode = "llm" if lead else "rules"
-    if lead is None:
-        lead = rules_lead
-    elif hybrid:
-        allowed_hints = set(SERVICE_KEYWORDS)
-        hints = [hint for hint in lead.service_hints if hint in allowed_hints]
-        lead = lead.model_copy(update={
-            "budget_inr": rules_lead.budget_inr,
-            "urgency": rules_lead.urgency,
-            "has_timeline": rules_lead.has_timeline,
-            "service_hints": hints or rules_lead.service_hints,
+    enrichment = llm.extract_llm(text) if use_llm and hybrid else None
+    # Routing and scoring fields remain rule-owned; the model supplies only
+    # optional presentation fields for the discovery brief.
+    lead = rules_lead
+    if enrichment:
+        lead = rules_lead.model_copy(update={
+            "company": enrichment.company or rules_lead.company,
+            "need_summary": enrichment.need_summary.strip() or rules_lead.need_summary,
         })
 
     # Retrieve with the raw text plus the extracted summary so short inquiries still match.
-    matches = r.search(text + " " + lead.need_summary, k=3)
+    matches = r.search(text + " " + rules_lead.need_summary, k=3)
 
     # Prefer an explicit service hint when present, otherwise the top retrieval hit.
     primary = None
@@ -50,9 +46,10 @@ def process_lead(text: str, use_llm: bool = True, hybrid: bool = True) -> LeadRe
         if primary and matches and primary not in {m.id for m in matches}:
             pass  # keep retrieval list as supporting evidence
 
-    score = score_lead(lead, matches)
+    score = score_lead(rules_lead, matches)
     kb_docs = {d["id"]: d["text"] for d in r.docs}
-    brief = (llm.brief_llm(text, lead, matches, kb_docs, score, primary) if use_llm else None) \
-        or template_brief(text, lead, matches, score, primary)
+    llm_brief = llm.brief_llm(text, lead, matches, kb_docs, score, primary) if use_llm and hybrid else None
+    brief = llm_brief or template_brief(text, lead, matches, score, primary)
+    mode = "hybrid" if enrichment or llm_brief else "rules"
     return LeadReport(extracted=lead, matches=matches, primary_service=primary,
                       score=score, brief=brief, mode=mode)

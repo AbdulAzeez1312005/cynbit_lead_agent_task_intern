@@ -17,14 +17,17 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Optional local LLM mode: install [Ollama](https://ollama.com/download), pull `qwen3:1.7b`, start its server, and set `LEAD_AGENT_PROVIDER=ollama` (optionally `OLLAMA_HOST` and `LEAD_AGENT_MODEL`; defaults are `http://localhost:11434` and `qwen3:1.7b`). Requests time out after 60 seconds (`LEAD_AGENT_TIMEOUT` can override this). The app checks the local tags endpoint and required model before enabling LLM mode. Without an available model, it uses the offline rules pipeline.
+Rules are the default for intent, service matching, budget, urgency, retrieval, and scoring. Optional Ollama mode only cleans the company/need summary and drafts the brief; it cannot set routing or score. Install [Ollama](https://ollama.com/download), run `ollama pull qwen3:1.7b`, and start its local server. Defaults are `OLLAMA_HOST=http://localhost:11434` and `LEAD_AGENT_MODEL=qwen3:1.7b`; override either with an environment variable. Requests time out after 60 seconds (`LEAD_AGENT_TIMEOUT` can override this). The app checks `/api/tags` and the selected model before enabling Ollama. If unavailable, it shows a warning and uses rules plus the template brief.
+
+Optional Ollama environment defaults are also listed in [.env.example](.env.example); export the values in your shell before running the app.
 
 ## Evaluate
 
 ```bash
-python eval/run_eval.py --mode rules --verbose
-python eval/run_eval.py --mode ollama    # raw local model extraction
-python eval/run_eval.py --mode hybrid    # local model plus deterministic budget/timeline safeguards
+python eval/run_eval.py                 # rules-only baseline
+python eval/run_eval.py --mode hybrid   # optional Ollama enrichment and brief; decisions stay rule-owned
+python eval/run_eval.py --data eval/holdout_leads.jsonl  # separate synthetic holdout
+python eval/tune_thresholds.py          # fit cutoffs on eval/leads.jsonl only
 pytest -q
 ```
 
@@ -32,13 +35,16 @@ For local Ollama evaluation in PowerShell:
 
 ```powershell
 ollama pull qwen3:1.7b
-$env:LEAD_AGENT_PROVIDER = "ollama"
+$env:OLLAMA_HOST = "http://localhost:11434"
 $env:LEAD_AGENT_MODEL = "qwen3:1.7b"
-python eval/run_eval.py --mode ollama
 python eval/run_eval.py --mode hybrid
 ```
 
-Results on the same 30 hand-labelled synthetic leads: rules — intent 100%, primary service 100%, tier 83% exact / 100% within one step; Ollama-only (`qwen3:1.7b`) — 73%, 41%, 33% / 57%; hybrid — 73%, 41%, 67% / 93%. These are not held-out results; see the technical report for limitations. The evaluator reports how many rows actually used LLM extraction and refuses to run model metrics if the selected Ollama model is unavailable.
+Final rules results on the 30 synthetic tuning leads: intent 30/30 (100%), primary service 27/27 (100%), exact tier 28/30 (93%), and tier within one step 30/30 (100%). The 10-case synthetic holdout scored intent 10/10 (100%), primary service 8/9 (89%), exact tier 9/10 (90%), and within one tier 10/10 (100%). Labels were hand-written by the author; this small holdout is not independent validation.
+
+The score cutoffs were grid-tuned on the 30-case tuning set to `HOT=61`, `WARM=39` (28/30 exact tier). Do not adjust them based on the holdout. Historical model-led extraction experiments on the prior pipeline: Ollama-only intent 22/30 (73%), service 11/27 (41%), tier exact 10/30 (33%), within one step 17/30 (57%); earlier hybrid intent 22/30 (73%), service 11/27 (41%), exact 20/30 (67%), within one step 28/30 (93%). The current system no longer uses model extraction for decisions.
+
+The original 30 leads are the tuning set. Ten additional paraphrased, Hinglish, multi-need, no-budget and product inquiries are isolated in `eval/holdout_leads.jsonl`; do not adjust rules or cutoffs based on those results. Both sets are synthetic and hand-labelled by the author, so the holdout is a small internal check rather than independent validation.
 
 ## Layout
 ```
@@ -46,6 +52,7 @@ app.py                  Streamlit UI
 src/leadagent/          schema, extract, retrieval, scoring, brief, llm, pipeline
 data/cynbit_kb.json     knowledge base written from cynbit.in
 eval/                   labelled leads and eval script
+eval/holdout_leads.jsonl separate synthetic holdout (do not tune on it)
 tests/                  unit tests
 docs/                   the two reports
 ```

@@ -7,7 +7,8 @@ from __future__ import annotations
 
 from .schema import ExtractedLead, KBMatch, ScoreResult
 
-HOT, WARM = 65, 40
+# Selected by exact-tier grid search on eval/leads.jsonl (30 synthetic tuning cases).
+HOT, WARM = 61, 39
 
 
 def score_lead(lead: ExtractedLead, matches: list[KBMatch]) -> ScoreResult:

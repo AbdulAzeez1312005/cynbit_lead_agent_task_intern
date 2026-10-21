@@ -69,6 +69,10 @@ An agent that, for each inquiry:
 
 No ROI number is claimed here: Cynbit's real inquiry volume and conversion data are needed first.
 
+### PoC evaluation snapshot
+
+The current rules-first prototype scored 30/30 (100%) on intent, 27/27 (100%) on primary service, 28/30 (93%) on exact tier, and 30/30 (100%) within one tier on its 30-case synthetic tuning set. On 10 separately held-out synthetic inquiries it scored 10/10 (100%) on intent, 8/9 (89%) on primary service, 9/10 (90%) on exact tier, and 10/10 (100%) within one tier. The cutoffs (`HOT=61`, `WARM=39`) were selected on the tuning set only. These author-labelled cases are an internal check, not a forecast of live performance.
+
 ### Risks
 | Risk | Mitigation |
 |---|---|

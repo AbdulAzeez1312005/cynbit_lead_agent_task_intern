@@ -8,6 +8,9 @@ _QUESTIONS = {
         "Which manual process costs the most time today, and how many hours a week?",
         "Where does the data live (CRM, email, spreadsheets, PDFs) and who owns it?",
         "What does a correct output look like, and who reviews mistakes?",
+        "How many invoices or other documents arrive each day, and which formats do they use?",
+        "Which fields should be extracted, and where should the verified data be entered?",
+        "For voice agents, which calls should be handled and how should transfers or failures work?",
     ],
     "svc-software": [
         "Who are the users and what are the top three workflows?",
@@ -29,15 +32,32 @@ _QUESTIONS = {
 _GENERIC = ["What is the budget range and decision timeline?", "Who else is involved in the decision?"]
 
 
-def service_discovery_questions(primary: str | None) -> list[str]:
+def service_discovery_questions(primary: str | None, inquiry: str = "") -> list[str]:
     """Return offering-specific question prompts for the brief drafter."""
-    return list(_QUESTIONS.get(primary or "", []))
+    text = inquiry.lower()
+    if primary == "svc-ai-automation" and any(word in text for word in ("invoice", "pdf", "tally", "scan", "ocr")):
+        return [
+            "How many invoices or other documents arrive each day, and which formats do they use?",
+            "Which fields should be extracted, and where should verified data be entered?",
+            "How should low-confidence or mismatched fields be reviewed?",
+        ]
+    if primary == "svc-ai-automation" and any(word in text for word in ("voice", "call", "phone", "receptionist")):
+        return [
+            "Which calls should the voice agent handle, and when should it transfer to a person?",
+            "Which phone system and booking tools should it integrate with?",
+            "How should it handle unclear requests, cancellations, and after-hours calls?",
+        ]
+    return list(_QUESTIONS.get(primary or "", []))[:3]
 
 
 def template_brief(text: str, lead: ExtractedLead, matches: list[KBMatch],
                    score: ScoreResult, primary: str | None) -> str:
     top = matches[0] if matches else None
-    qs = list(_QUESTIONS.get(primary or "", []))[:3] + _GENERIC
+    qs = service_discovery_questions(primary, text)
+    if lead.budget_inr is None:
+        qs.append(_GENERIC[0])
+    if not lead.has_timeline:
+        qs.append(_GENERIC[1])
     bud = f"about INR {lead.budget_inr:,}" if lead.budget_inr else "not stated"
     lines = [
         f"# Discovery brief: {lead.company or 'Unnamed lead'}",
