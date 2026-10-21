@@ -43,16 +43,19 @@ def service_discovery_questions(primary: str | None, inquiry: str = "") -> list[
         ]
     if primary == "svc-ai-automation" and any(word in text for word in ("voice", "call", "phone", "receptionist")):
         return [
-            "Which calls should the voice agent handle, and when should it transfer to a person?",
-            "Which phone system and booking tools should it integrate with?",
-            "How should it handle unclear requests, cancellations, and after-hours calls?",
+            "How many inbound calls and appointment requests arrive per day, and when are peak hours?",
+            "Do you have WhatsApp Business API access, and which number or provider should connect?",
+            "Which clinic booking or practice-management software should the assistant use?",
+            "Which languages are needed (Hindi, English, or others), including language switching?",
+            "What should the assistant do when it cannot answer, booking fails, or calls need transfer to a person?",
         ]
     return list(_QUESTIONS.get(primary or "", []))[:3]
 
 
 def template_brief(text: str, lead: ExtractedLead, matches: list[KBMatch],
                    score: ScoreResult, primary: str | None) -> str:
-    top = matches[0] if matches else None
+    top = next((m for m in matches if m.id == primary), None) if primary else None
+    top = top or (matches[0] if matches else None)
     qs = service_discovery_questions(primary, text)
     if lead.budget_inr is None:
         qs.append(_GENERIC[0])

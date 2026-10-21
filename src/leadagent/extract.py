@@ -20,6 +20,8 @@ SERVICE_KEYWORDS = {
     "svc-ai-automation": [
         "ai", "llm", "agent", "agents", "chatbot", "automation", "automate", "gpt", "voice",
         "rag", "machine learning", "ml", "openai", "workflow", "ocr", "data entry",
+        "calls", "answers calls", "receptionist", "whatsapp", "books", "appointments",
+        "slots", "assistant", "ai assistant",
         "invoice", "invoices", "pdf", "pdfs", "scan", "scans", "tally", "excel",
         "spreadsheet", "manually", "extract", "reads them",
     ],
@@ -44,6 +46,11 @@ _NOT_FIT = re.compile(r"\b(guest post|backlinks? for sale|buy followers|crypto g
                       r"we offer (seo|leads)|sell(ing)? (you )?(a )?(database|email list)|"
                       r"partnership proposal for our services|job opening at our)\b", re.I)
 _PRODUCT = re.compile(r"\b(demo of|pricing for|trial of|subscribe to|sign up for)\b", re.I)
+_NOT_COMPANY = {
+    "revio", "tenantease", "cynbit", "whatsapp", "pdf", "pdfs", "aws", "azure",
+    "google", "tally", "excel", "india", "jaipur", "the", "our", "ai", "gpt",
+    "openai", "zomato",
+}
 
 _MONEY = re.compile(
     r"(?P<cur>₹|rs\.?|inr|\$|usd)?\s*(?P<num>\d+(?:[.,]\d+)*)\s*(?P<unit>lakhs?|lacs?|l\b|crores?|cr\b|k\b|m\b)?\s*(?P<cur2>inr|rupees|usd|dollars)?",
@@ -132,15 +139,20 @@ def extract_company(text: str) -> Optional[str]:
     m = re.search(r"(?:from|at|with|of|represent(?:ing)?|founder of|ceo of|cto of)\s+([A-Z][\w&.\-]+(?:\s+[A-Z][\w&.\-]+){0,3})", text)
     if m:
         name = m.group(1).strip(" .,")
-        if name.lower() not in {"india", "jaipur", "the", "our"}:
+        if name.split()[0].lower() not in _NOT_COMPANY:
             return name
     return None
 
 
 def extract_rules(text: str) -> ExtractedLead:
     urgency, has_tl = parse_urgency(text)
-    sentences = re.split(r"(?<=[.!?])\s+", text.strip())
-    summary = " ".join(sentences[:2])[:300]
+    sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text.strip()) if s.strip()]
+    intro = re.compile(r"^(?:hi|hello|hey)\b|^(?:i['’]?m|i am)\s+(?:the\s+)?(?:owner|founder|ceo|cto)\b|^we are\s+(?:a|an|the)\b|^we run\b", re.I)
+    request = re.compile(r"\b(?:want|need|looking for|looking to|required?|can't keep up|cannot keep up|struggling|help us|would like)\b", re.I)
+    candidates = [s for s in sentences if not intro.search(s)]
+    preferred = [s for s in candidates if request.search(s)]
+    chosen = (preferred or candidates)[:2]
+    summary = " ".join(chosen)[:300]
     return ExtractedLead(
         company=extract_company(text),
         intent=classify_intent(text),

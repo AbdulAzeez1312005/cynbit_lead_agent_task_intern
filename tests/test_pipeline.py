@@ -4,7 +4,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from leadagent import process_lead  # noqa: E402
-from leadagent.extract import classify_intent, parse_budget_inr, parse_urgency  # noqa: E402
+from leadagent.extract import classify_intent, extract_company, parse_budget_inr, parse_urgency  # noqa: E402
 from leadagent.schema import ExtractedLead  # noqa: E402
 from leadagent.scoring import score_lead  # noqa: E402
 
@@ -15,6 +15,12 @@ def test_budget_parsing():
     assert parse_budget_inr("about $4000") == 340_000
     assert parse_budget_inr("40k per month") == 40_000
     assert parse_budget_inr("we need it in 3 weeks") is None
+
+
+def test_company_extraction_rejects_product_names():
+    assert extract_company("Interested in a demo of Revio") is None
+    assert extract_company("We need integration with WhatsApp") is None
+    assert extract_company("We are from PDF into Tally") is None
 
 
 def test_urgency():
@@ -51,6 +57,29 @@ def test_ollama_think_block_is_stripped_before_validation(monkeypatch):
     result = llm.extract_llm("Need rent reminders for flats")
     assert result is not None
     assert result.need_summary == "Need rent reminders"
+
+
+def test_ollama_brief_grounding_allows_known_budget_and_score(monkeypatch):
+    from leadagent import llm
+    from leadagent.schema import KBMatch, ScoreResult
+
+    monkeypatch.setattr(llm, "available", lambda: True)
+    monkeypatch.setattr(
+        llm, "_ollama_chat",
+        lambda *args, **kwargs: "Budget: INR 300,000. Score: 81/100.",
+    )
+    lead = ExtractedLead(need_summary="Automate document extraction", budget_inr=300_000)
+    match = KBMatch(
+        id="svc-ai-automation", name="AI Automation", type="service",
+        url="https://example.test", score=0.4,
+    )
+    score = ScoreResult(total=81, tier="hot", breakdown={"budget": 35}, reasons=[])
+    result = llm.brief_llm(
+        "Automate document extraction", lead, [match],
+        {"svc-ai-automation": "Document extraction automation"}, score,
+        "svc-ai-automation",
+    )
+    assert result == "Budget: INR 300,000. Score: 81/100."
 
 
 def test_spam_is_cold():
@@ -152,6 +181,42 @@ def test_rules_keep_two_sentence_need_summary_under_300_chars():
     assert "Second sentence" in summary
     assert "Third sentence" not in summary
     assert len(summary) <= 300
+
+
+def test_summary_skips_clinic_introduction_and_keeps_voice_agent_request():
+    from leadagent.extract import extract_rules
+    inquiry = (
+        "Hi, I'm the owner of Sharma Dental Care, we have 3 clinics in Jaipur. "
+        "We need an AI voice receptionist that answers calls and books appointments. "
+        "It should confirm available slots."
+    )
+    lead = extract_rules(inquiry)
+    assert lead.need_summary.startswith("We need an AI voice receptionist")
+    assert "Sharma Dental Care" not in lead.need_summary
+    assert len(lead.need_summary) <= 300
+    assert "svc-ai-automation" in lead.service_hints
+
+
+def test_primary_service_controls_recommendation_and_fit():
+    inquiry = (
+        "Hi, I'm the owner of Sharma Dental Care, we have 3 clinics in Jaipur. "
+        "We need an AI voice receptionist that answers calls and books appointments."
+    )
+    report = process_lead(inquiry, use_llm=False)
+    assert report.primary_service == "svc-ai-automation"
+    assert report.matches[0].id == "svc-ai-automation"
+    assert "## Recommended Cynbit offering\n**AI Automation**" in report.brief
+    assert any("Best KB match: AI Automation" in reason for reason in report.score.reasons)
+
+
+def test_voice_discovery_questions_cover_clinic_setup():
+    from leadagent.brief import service_discovery_questions
+    questions = service_discovery_questions(
+        "svc-ai-automation", "Need a voice receptionist for clinic calls and WhatsApp"
+    )
+    all_questions = " ".join(questions).lower()
+    for term in ("calls", "whatsapp business api", "clinic booking", "hindi", "cannot answer"):
+        assert term in all_questions
 
 
 def test_reason_for_midrange_clarity_is_not_too_blunt():

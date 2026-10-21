@@ -31,8 +31,8 @@ def process_lead(text: str, use_llm: bool = False, hybrid: bool = True) -> LeadR
             "need_summary": enrichment.need_summary.strip() or rules_lead.need_summary,
         })
 
-    # Retrieve with the raw text plus the extracted summary so short inquiries still match.
-    matches = r.search(text + " " + rules_lead.need_summary, k=3)
+    # Use the cleaned need summary so introductions do not dominate retrieval.
+    all_matches = r.search(rules_lead.need_summary or text, k=len(r.docs))
 
     # Prefer an explicit service hint when present, otherwise the top retrieval hit.
     primary = None
@@ -41,12 +41,20 @@ def process_lead(text: str, use_llm: bool = False, hybrid: bool = True) -> LeadR
             primary = "prog-bitelevate"
         elif lead.service_hints:
             primary = lead.service_hints[0]
-        elif matches:
-            primary = matches[0].id
-        if primary and matches and primary not in {m.id for m in matches}:
-            pass  # keep retrieval list as supporting evidence
+        elif all_matches:
+            primary = all_matches[0].id
 
-    score = score_lead(rules_lead, matches)
+    # Keep the rule-selected offering first even when a product description has
+    # stronger incidental vocabulary overlap (for example, “clinics”).
+    primary_match = next((m for m in all_matches if m.id == primary), None)
+    if primary and primary_match is None:
+        doc = next((d for d in r.docs if d["id"] == primary), None)
+        if doc:
+            from .schema import KBMatch
+            primary_match = KBMatch(id=doc["id"], name=doc["name"], type=doc["type"], url=doc["url"], score=0.0)
+    matches = ([primary_match] if primary_match else []) + [m for m in all_matches if m.id != primary][:2]
+
+    score = score_lead(rules_lead, matches, primary)
     kb_docs = {d["id"]: d["text"] for d in r.docs}
     llm_brief = llm.brief_llm(text, lead, matches, kb_docs, score, primary) if use_llm and hybrid else None
     brief = llm_brief or template_brief(text, lead, matches, score, primary)

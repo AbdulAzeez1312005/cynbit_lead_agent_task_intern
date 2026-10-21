@@ -71,7 +71,7 @@ No ROI number is claimed here: Cynbit's real inquiry volume and conversion data 
 
 ### PoC evaluation snapshot
 
-The current rules-first prototype scored 30/30 (100%) on intent, 27/27 (100%) on primary service, 28/30 (93%) on exact tier, and 30/30 (100%) within one tier on its 30-case synthetic tuning set. On 10 separately held-out synthetic inquiries it scored 10/10 (100%) on intent, 8/9 (89%) on primary service, 9/10 (90%) on exact tier, and 10/10 (100%) within one tier. The cutoffs (`HOT=61`, `WARM=39`) were selected on the tuning set only. These author-labelled cases are an internal check, not a forecast of live performance.
+The current rules-first prototype scored 30/30 (100%) on intent, 26/27 (96%) on primary service, 24/30 (80%) on exact tier, and 30/30 (100%) within one tier on its 30-case synthetic tuning set. On a supplementary set of 10 synthetic inquiries it scored 10/10 (100%) on intent, 8/9 (89%) on primary service, 8/10 (80%) on exact tier, and 10/10 (100%) within one tier. Several rules were changed after earlier inspection of overlapping examples, so this is not an untouched holdout or independent validation. The cutoffs (`HOT=61`, `WARM=39`) were selected on the tuning set. These author-labelled cases are a weak internal check, not a forecast of live performance.
 
 ### Risks
 | Risk | Mitigation |

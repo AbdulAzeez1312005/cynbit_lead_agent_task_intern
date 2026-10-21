@@ -40,11 +40,11 @@ $env:LEAD_AGENT_MODEL = "qwen3:1.7b"
 python eval/run_eval.py --mode hybrid
 ```
 
-Final rules results on the 30 synthetic tuning leads: intent 30/30 (100%), primary service 27/27 (100%), exact tier 28/30 (93%), and tier within one step 30/30 (100%). The 10-case synthetic holdout scored intent 10/10 (100%), primary service 8/9 (89%), exact tier 9/10 (90%), and within one tier 10/10 (100%). Labels were hand-written by the author; this small holdout is not independent validation.
+Final rules results on the 30 synthetic tuning leads: intent 30/30 (100%), primary service 26/27 (96%), exact tier 24/30 (80%), and tier within one step 30/30 (100%). The 10-case supplementary set scored intent 10/10 (100%), primary service 8/9 (89%), exact tier 8/10 (80%), and within one tier 10/10 (100%). Labels were hand-written by the author. Several rules were changed after earlier inspection of overlapping examples, so this set is not an untouched holdout or independent validation; treat its metrics as a weak internal check.
 
-The score cutoffs were grid-tuned on the 30-case tuning set to `HOT=61`, `WARM=39` (28/30 exact tier). Do not adjust them based on the holdout. Historical model-led extraction experiments on the prior pipeline: Ollama-only intent 22/30 (73%), service 11/27 (41%), tier exact 10/30 (33%), within one step 17/30 (57%); earlier hybrid intent 22/30 (73%), service 11/27 (41%), exact 20/30 (67%), within one step 28/30 (93%). The current system no longer uses model extraction for decisions.
+The score cutoffs are `HOT=61`, `WARM=39`; they were selected using a threshold-search script on the synthetic tuning set. That script approximates the short-inquiry cap and does not exactly reproduce scoring logic. The current measured result is 24/30 exact tier. Historical model-led extraction experiments on the prior pipeline: Ollama-only intent 22/30 (73%), service 11/27 (41%), tier exact 10/30 (33%), within one step 17/30 (57%); earlier hybrid intent 22/30 (73%), service 11/27 (41%), exact 20/30 (67%), within one step 28/30 (93%). The current system no longer uses model extraction for decisions.
 
-The original 30 leads are the tuning set. Ten additional paraphrased, Hinglish, multi-need, no-budget and product inquiries are isolated in `eval/holdout_leads.jsonl`; do not adjust rules or cutoffs based on those results. Both sets are synthetic and hand-labelled by the author, so the holdout is a small internal check rather than independent validation.
+The original 30 leads are the tuning set. Ten additional paraphrased, Hinglish, multi-need, no-budget and product inquiries are in `eval/holdout_leads.jsonl`. Some subsequent rule changes addressed patterns in overlapping cases after earlier inspection of the holdout outputs, so it is not a clean untouched validation set. Both sets are synthetic and hand-labelled by the author.
 
 ## Layout
 ```
@@ -52,7 +52,7 @@ app.py                  Streamlit UI
 src/leadagent/          schema, extract, retrieval, scoring, brief, llm, pipeline
 data/cynbit_kb.json     knowledge base written from cynbit.in
 eval/                   labelled leads and eval script
-eval/holdout_leads.jsonl separate synthetic holdout (do not tune on it)
+eval/holdout_leads.jsonl supplementary synthetic set (not an untouched holdout)
 tests/                  unit tests
 docs/                   the two reports
 ```

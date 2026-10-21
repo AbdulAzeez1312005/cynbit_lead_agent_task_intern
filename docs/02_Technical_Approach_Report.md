@@ -38,7 +38,7 @@ Code layout: `src/leadagent/{schema,extract,retrieval,scoring,brief,llm,pipeline
 
 **Knowledge base** (`data/cynbit_kb.json`): 9 records (4 services, 3 products, BitElevate, engagement process) written from Cynbit's public pages, each with id, type, name, URL and text. Current KB is hand-curated for the PoC. Production version: scheduled crawl of cynbit.in, plus internal case studies and pricing guidance, chunked and embedded into Pinecone with source URL metadata.
 
-**Evaluation data** (`eval/leads.jsonl`): 30 synthetic tuning inquiries I wrote to resemble real traffic, covering strong leads, vague one-liners, product inquiries (Revio, TenantEase, Studio), student inquiries, spam, and mixed INR/USD budgets. `eval/holdout_leads.jsonl` contains 10 additional cases, including paraphrase, Hinglish and multi-need examples; rules/cutoffs were fixed before its result was inspected. Each case has hand-assigned labels. This small author-labelled holdout is not independent validation.
+**Evaluation data** (`eval/leads.jsonl`): 30 synthetic tuning inquiries I wrote to resemble real traffic, covering strong leads, vague one-liners, product inquiries (Revio, TenantEase, Studio), student inquiries, spam, and mixed INR/USD budgets. `eval/holdout_leads.jsonl` contains 10 additional cases, including paraphrase, Hinglish and multi-need examples. Several rules were changed after earlier inspection of overlapping holdout examples, including document/voice keywords, Hinglish handling, summary selection, and primary-service priority/fit; this is not an untouched holdout. Each case has hand-assigned labels, making the result a weak internal check rather than independent validation.
 
 ## 4. Prompt design
 
@@ -54,18 +54,18 @@ Final rules-only results on the 30 hand-labelled synthetic leads:
 
 | Mode | Intent | Primary service | Tier exact | Tier within one step |
 |---|---:|---:|---:|---:|
-| Final rules pipeline (30-case tuning set) | 30/30 = 100% | 27/27 = 100% | 28/30 = 93% | 30/30 = 100% |
+| Final rules pipeline (30-case tuning set) | 30/30 = 100% | 26/27 = 96% | 24/30 = 80% | 30/30 = 100% |
 | Ollama-only extraction experiment (removed) | 22/30 = 73% | 11/27 = 41% | 10/30 = 33% | 17/30 = 57% |
 | Earlier hybrid extraction experiment (removed) | 22/30 = 73% | 11/27 = 41% | 20/30 = 67% | 28/30 = 93% |
 
 The two model-led rows are historical experiments on the prior pipeline, when the model could decide intent and service hints. They explain why the final system makes those fields rules-only. In the final pipeline, Ollama (`qwen3:1.7b`) is restricted to optional company/summary wording and brief drafting; it cannot affect the rules-owned accuracy results.
 
-The 30 original leads form the synthetic tuning set. A separately authored 10-lead holdout (`eval/holdout_leads.jsonl`) scored intent 10/10 (100%), primary service 8/9 (89%), exact tier 9/10 (90%), and tier within one step 10/10 (100%). These labels were also hand-written by the author, so this is a small internal check, not independent validation. The one service/tier miss was a local-search inquiry, which retrieved Revio and scored cold rather than matching SEO/marketing and warm. No rules or thresholds were changed after inspecting these holdout results.
+The 30 original leads form the synthetic tuning set. The supplementary 10-lead set (`eval/holdout_leads.jsonl`) scored intent 10/10 (100%), primary service 8/9 (89%), exact tier 8/10 (80%), and tier within one step 10/10 (100%). These labels were also hand-written by the author. Several rules were changed after an earlier inspection of overlapping examples, so these results are a weak internal check rather than untouched validation. The primary-service miss was a local-search inquiry, which matched Revio rather than SEO/marketing; two tier labels differed by one tier.
 
 How to read this honestly:
 - **Not a held-out test.** I wrote the labels and the rules, then adjusted intent, urgency, clarity, and short-inquiry handling after inspecting examples. Treat these numbers as a smoke check, not an estimate of live accuracy.
 - **Rules intent misses (0 on this version):** this synthetic set now includes product intent from the top product hint. This is likely optimistic because the labels and rules were authored together.
-- **Threshold tuning:** a grid search over the 30-case synthetic tuning set selected `HOT=61` and `WARM=39`, yielding 28/30 exact tiers on that set. This is fitted to synthetic labels, not real conversions; the holdout was evaluated afterward and was not used to adjust cutoffs.
+- **Threshold tuning:** a threshold search over the 30-case synthetic tuning set originally selected `HOT=61` and `WARM=39`, yielding 28/30 exact tiers at that time. The search script approximates the short-inquiry cap and does not exactly reproduce the scorer. After later extraction and primary-match changes, the current exact-tier result is 24/30. These cutoffs are fitted to synthetic labels, not real conversions.
 - **Local model limits:** model-led extraction underperformed the rules baseline on these labels, and inference was slow on CPU (roughly four minutes per 30-lead run). The final pipeline does not use model predictions for decisions.
 - **Scoring explanation:** clarity remains a simple proxy based on summary length and service hints, with a 5-point bonus when both a service hint and an 8-word summary are present. Scores of 15+ are described as clear, 10 to 14 as somewhat general, and below 10 as vague. This needs calibration with sales reviewers.
 - **Discovery questions:** the rules template uses fixed service-specific questions plus generic questions. The LLM prompt asks for five questions tailored to the inquiry and offering. In a local clinic example it asked about call handling, appointment booking, existing tools, and data privacy, though some questions remained generic. This is a key quality difference to assess in a reviewed pilot; drafts still need human review.

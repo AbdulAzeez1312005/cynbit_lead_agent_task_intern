@@ -5,3 +5,4 @@ __pycache__/
 .streamlit/secrets.toml
 eval/results.json
 eval/results_*.json
+PROJECT_CODE_BUNDLE.md

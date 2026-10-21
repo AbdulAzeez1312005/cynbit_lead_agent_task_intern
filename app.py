@@ -53,6 +53,8 @@ text = st.text_area("Paste an inbound inquiry", value=default, height=160, key=f
 
 if st.button("Qualify lead", type="primary", disabled=not text.strip()):
     rep = process_lead(text, use_llm=use_llm)
+    if use_llm and rep.mode == "rules":
+        st.warning("Ollama did not return usable enrichment or a brief. Showing the rules-based result and template brief.")
     c1, c2, c3 = st.columns(3)
     c1.metric("Score", f"{rep.score.total}/100")
     c2.metric("Tier", rep.score.tier.upper())

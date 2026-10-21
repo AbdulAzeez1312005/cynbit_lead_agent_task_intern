@@ -7,11 +7,12 @@ from __future__ import annotations
 
 from .schema import ExtractedLead, KBMatch, ScoreResult
 
-# Selected by exact-tier grid search on eval/leads.jsonl (30 synthetic tuning cases).
+# Selected by threshold search on eval/leads.jsonl (30 synthetic tuning cases).
+# The search script approximates the short-inquiry cap; it is not an exact scorer replica.
 HOT, WARM = 61, 39
 
 
-def score_lead(lead: ExtractedLead, matches: list[KBMatch]) -> ScoreResult:
+def score_lead(lead: ExtractedLead, matches: list[KBMatch], primary_service: str | None = None) -> ScoreResult:
     b: dict[str, int] = {}
     reasons: list[str] = []
 
@@ -62,10 +63,12 @@ def score_lead(lead: ExtractedLead, matches: list[KBMatch]) -> ScoreResult:
         reasons.append("Has a concrete timeline.")
 
     # Service fit (0-20), from retrieval similarity to the KB
-    top = matches[0].score if matches else 0.0
+    primary_match = next((m for m in matches if m.id == primary_service), None)
+    top = primary_match.score if primary_match else (matches[0].score if matches else 0.0)
     b["fit"] = int(min(top / 0.35, 1.0) * 20)
     if matches:
-        reasons.append(f"Best KB match: {matches[0].name} (similarity {matches[0].score}).")
+        best = primary_match or matches[0]
+        reasons.append(f"Best KB match: {best.name} (similarity {best.score}).")
 
     if lead.intent == "product_interest":
         b["fit"] = min(20, b["fit"] + 4)
