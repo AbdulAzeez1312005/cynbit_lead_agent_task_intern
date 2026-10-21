@@ -2,7 +2,7 @@
 
 Usage:
     python eval/run_eval.py            # rules baseline (offline)
-    python eval/run_eval.py --llm      # LLM extraction + brief (needs OPENAI_API_KEY)
+    python eval/run_eval.py --mode rules|ollama|hybrid
 
 Metrics: intent accuracy, primary-service accuracy (on leads that have a service),
 tier accuracy, and tier within-one-step accuracy (hot/warm/cold are ordinal).
@@ -24,9 +24,21 @@ ORDER = {"cold": 0, "warm": 1, "hot": 2}
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--llm", action="store_true")
+    ap.add_argument("--llm", action="store_true", help="deprecated alias for --mode hybrid")
+    ap.add_argument("--mode", choices=("rules", "ollama", "hybrid"), default=None)
     ap.add_argument("--verbose", action="store_true")
     args = ap.parse_args()
+    mode = args.mode or ("hybrid" if args.llm else "rules")
+    if mode in {"ollama", "hybrid"}:
+        import os
+        os.environ.setdefault("LEAD_AGENT_PROVIDER", "ollama")
+        os.environ.setdefault("LEAD_AGENT_MODEL", "qwen3:1.7b")
+        from leadagent import llm
+        llm.PROVIDER = os.environ["LEAD_AGENT_PROVIDER"].lower()
+        llm.MODEL = os.environ["LEAD_AGENT_MODEL"]
+        if not llm.available():
+            print(f"mode={mode} not run: Ollama or required model {llm.MODEL} is unavailable")
+            return
 
     rows = [json.loads(l) for l in (ROOT / "eval" / "leads.jsonl").read_text().splitlines() if l.strip()]
     n = len(rows)
@@ -36,7 +48,7 @@ def main() -> None:
     for row in rows:
         if args.verbose:
             print(f"processing lead #{row['id']}", flush=True)
-        rep = process_lead(row["text"], use_llm=args.llm)
+        rep = process_lead(row["text"], use_llm=mode != "rules", hybrid=mode != "ollama")
         llm_rows += rep.mode == "llm"
         i_ok = rep.extracted.intent == row["intent"]
         t_ok = rep.score.tier == row["tier"]
@@ -58,9 +70,8 @@ def main() -> None:
                   f"svc {rep.primary_service}/{row['service']} "
                   f"tier {rep.score.tier}({rep.score.total})/{row['tier']}")
 
-    mode = "llm" if args.llm else "rules"
     print(f"mode={mode}  n={n}")
-    if args.llm:
+    if mode != "rules":
         print(f"LLM extraction used:     {llm_rows}/{n}")
     print(f"intent accuracy:          {intent_ok}/{n} = {intent_ok / n:.0%}")
     print(f"primary service accuracy: {svc_ok}/{svc_n} = {svc_ok / svc_n:.0%}")

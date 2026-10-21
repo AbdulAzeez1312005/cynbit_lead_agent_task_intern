@@ -17,13 +17,14 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Optional LLM mode with OpenAI: set `OPENAI_API_KEY` (and optionally `LEAD_AGENT_MODEL`, default `gpt-4o-mini`). Or install [Ollama](https://ollama.com/download), pull a model with `ollama pull qwen3:1.7b`, then set `LEAD_AGENT_PROVIDER=ollama` and optionally `LEAD_AGENT_MODEL=qwen3:1.7b` before launching. The default model for Ollama is `qwen3:1.7b`; the local Ollama server must be running. Without a configured LLM provider the app runs the offline rules pipeline, so it always works.
+Optional local LLM mode: install [Ollama](https://ollama.com/download), pull `qwen3:1.7b`, start its server, and set `LEAD_AGENT_PROVIDER=ollama` (optionally `OLLAMA_HOST` and `LEAD_AGENT_MODEL`; defaults are `http://localhost:11434` and `qwen3:1.7b`). Requests time out after 60 seconds (`LEAD_AGENT_TIMEOUT` can override this). The app checks the local tags endpoint and required model before enabling LLM mode. Without an available model, it uses the offline rules pipeline.
 
 ## Evaluate
 
 ```bash
-python eval/run_eval.py --verbose        # rules baseline
-python eval/run_eval.py --llm            # OpenAI key, or LEAD_AGENT_PROVIDER=ollama with a local model
+python eval/run_eval.py --mode rules --verbose
+python eval/run_eval.py --mode ollama    # raw local model extraction
+python eval/run_eval.py --mode hybrid    # local model plus deterministic budget/timeline safeguards
 pytest -q
 ```
 
@@ -33,10 +34,11 @@ For local Ollama evaluation in PowerShell:
 ollama pull qwen3:1.7b
 $env:LEAD_AGENT_PROVIDER = "ollama"
 $env:LEAD_AGENT_MODEL = "qwen3:1.7b"
-python eval/run_eval.py --llm
+python eval/run_eval.py --mode ollama
+python eval/run_eval.py --mode hybrid
 ```
 
-Current rules-baseline results on 30 hand-labelled synthetic leads: intent 90%, primary service 100%, tier 80% exact and 100% within one step. On the same synthetic leads, local Ollama `qwen3:1.7b` achieved intent 73%, primary service 37%, tier 40% exact and 77% within one step; 29 of 30 rows used LLM extraction. These are not held-out results; see the technical report for caveats. The evaluator reports how many rows were actually extracted with an LLM, since unavailable models fall back to rules.
+Current rules-baseline results on 30 hand-labelled synthetic leads: intent 100%, primary service 100%, tier 83% exact and 100% within one step. These are not held-out results. Current Ollama-only and hybrid results were not measured in this environment because the local Ollama server/model is unavailable. The evaluator reports how many rows actually used LLM extraction, since unavailable models fall back to rules.
 
 ## Layout
 ```

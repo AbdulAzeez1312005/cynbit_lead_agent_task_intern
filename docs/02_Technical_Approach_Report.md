@@ -27,7 +27,7 @@ Code layout: `src/leadagent/{schema,extract,retrieval,scoring,brief,llm,pipeline
 
 | Decision | Choice | Reason | Alternative considered |
 |---|---|---|---|
-| Extraction | LLM with a pydantic JSON schema, rule-based fallback | Structured output gives validated fields; fallback keeps the demo working offline and gives a baseline to beat | Pure rules (brittle on messy text), pure LLM (no offline path) |
+| Extraction | Local Ollama with pydantic JSON schema, deterministic budget/timeline parsers, rule fallback | Structured output plus explicit deterministic fields; fallback keeps the demo working offline | Pure rules (brittle on paraphrases), unguarded LLM |
 | Model | OpenAI `gpt-4o-mini` by default; optional local Ollama model set with `LEAD_AGENT_PROVIDER=ollama` and `LEAD_AGENT_MODEL` (tested with `qwen3:1.7b`) | OpenAI matches Cynbit's stated stack; Ollama allows local inference without an API key | Larger hosted model for brief quality; GPU-backed local inference |
 | Retrieval | In-memory TF-IDF over about 9 documents | The KB is tiny; a vector DB adds cost and moving parts with no accuracy gain at this size | Pinecone with embeddings once the KB holds case studies, past proposals and pricing notes |
 | Scoring | Deterministic weighted rubric (budget 35, clarity 25, urgency 20, fit 20) | Sales can read and dispute every point; weights can be fitted to conversion data later | LLM-as-judge score (opaque, drifts between runs) |
@@ -48,35 +48,35 @@ Code layout: `src/leadagent/{schema,extract,retrieval,scoring,brief,llm,pipeline
 
 ## 5. Evaluation
 
-Run: `python eval/run_eval.py --verbose` for rules. For LLM mode, set `OPENAI_API_KEY` or set `LEAD_AGENT_PROVIDER=ollama` and pull a local model, then run `python eval/run_eval.py --llm`.
+Run `python eval/run_eval.py --mode rules`, `--mode ollama` and `--mode hybrid` after pulling the local model. Ollama-only uses raw extraction; hybrid keeps budget and urgency from deterministic parsers.
 
 Results of the **rules pipeline** on the 30 synthetic leads:
 
 | Metric | Result |
 |---|---|
-| Intent accuracy | 27/30 = 90% |
+| Intent accuracy | 30/30 = 100% |
 | Primary service accuracy (27 leads with a service) | 27/27 = 100% |
-| Tier accuracy, exact | 24/30 = 80% |
+| Tier accuracy, exact | 25/30 = 83% |
 | Tier within one step (hot/warm/cold are ordinal) | 30/30 = 100% |
 
-Results of the **local LLM pipeline** on the same 30 leads, using Ollama `qwen3:1.7b` (Q4_K_M) on this CPU-only machine:
+Ollama-only and hybrid results on the current prompt/code were **not measured**: no Ollama executable or local API was available in this environment. This comparison is incomplete until both modes are run with `qwen3:1.7b` available:
 
 | Metric | Result |
 |---|---|
-| Intent accuracy | 22/30 = 73% |
-| Primary service accuracy (27 leads with a service) | 10/27 = 37% |
-| Tier accuracy, exact | 12/30 = 40% |
-| Tier within one step | 23/30 = 77% |
-| LLM extraction used | 29/30; one lead fell back to rules |
+| Mode | Intent | Primary service | Tier exact | Tier within one step |
+|---|---:|---:|---:|---:|
+| Rules | 30/30 = 100% | 27/27 = 100% | 25/30 = 83% | 30/30 = 100% |
+| Ollama only | Not measured | Not measured | Not measured | Not measured |
+| Hybrid | Not measured | Not measured | Not measured | Not measured |
 
-Across the 29 rows that used LLM extraction, intent accuracy was 21/29 = 72%, primary service accuracy was 9/26 = 35%, exact tier accuracy was 11/29 = 38%, and tier within one step was 22/29 = 76%. The all-row figures above include the single rules fallback. The local model scored below the rules baseline on these labels, so this run does not support replacing the rules path. It is also not a fair held-out comparison: all leads are synthetic and the labels were hand assigned by the project author.
+A previous run with an earlier prompt and pipeline measured Ollama `qwen3:1.7b` at 73% intent, 37% primary service, 40% exact tier, and 77% within one step. It is not directly comparable to the current implementation and is historical context only. All leads are synthetic, and labels were assigned by the project author; this is not a held-out test.
 
 How to read this honestly:
-- **Not a held-out test.** I wrote the labels and the rules, and changed them after inspecting results: recognise Cynbit product names as product interest, cap very short inquiries at cold, and recognise "this month" / "start this month" as high urgency after a manual app run exposed the miss. Rules tier accuracy moved from 22/30 to 24/30; intent stayed at 27/30. Real accuracy on unseen inquiries will likely be lower.
-- **Remaining intent misses (3):** product inquiries that describe the need without naming the product (for example "adaptive coding test platform with mock interviews"). This is a useful case to watch in the LLM comparison.
-- **Rules tier misses (7):** mostly lead-like inquiries scoring one tier off, usually at the 65/40 thresholds, which are untuned guesses.
+- **Not a held-out test.** I wrote the labels and the rules, then adjusted intent, urgency, clarity, and short-inquiry handling after inspecting examples. Treat these numbers as a smoke check, not an estimate of live accuracy.
+- **Rules intent misses (0 on this version):** this synthetic set now includes product intent from the top product hint. This is likely optimistic because the labels and rules were authored together.
+- **Rules tier misses (5):** remaining misses cluster around the 65/40 thresholds, which are still hand-selected rather than calibrated on independent data.
 - **Local model limits:** the tested 1.7B model underperformed the rules baseline on this dataset, and inference was slow on CPU. A larger model or GPU might change speed or accuracy, but this has not been measured.
-- **Scoring explanation:** clarity remains a simple proxy based on summary length and service hints. A 15/25 score is described as reasonably clear, 10–14 as partly specified, and below 10 as vague. A future rubric could reward concrete action-object details; the current score still needs calibration with sales reviewers.
+- **Scoring explanation:** clarity remains a simple proxy based on summary length and service hints, with a 5-point bonus when both a service hint and an 8-word summary are present. Scores of 15+ are described as clear, 10–14 as somewhat general, and below 10 as vague. This needs calibration with sales reviewers.
 - **Discovery questions:** the rules template uses fixed service-specific questions plus generic questions. The LLM prompt asks for five questions tailored to the inquiry and offering. In a local clinic example it asked about call handling, appointment booking, existing tools, and data privacy, though some questions remained generic. This is a key quality difference to assess in a reviewed pilot; drafts still need human review.
 
 ## 6. Execution plan
