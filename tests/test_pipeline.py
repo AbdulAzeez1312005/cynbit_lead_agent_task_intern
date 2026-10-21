@@ -5,6 +5,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from leadagent import process_lead  # noqa: E402
 from leadagent.extract import parse_budget_inr, parse_urgency  # noqa: E402
+from leadagent.schema import ExtractedLead  # noqa: E402
+from leadagent.scoring import score_lead  # noqa: E402
 
 
 def test_budget_parsing():
@@ -45,3 +47,13 @@ def test_strong_lead_is_not_cold():
 
 def test_vague_is_cold():
     assert process_lead("Need a website.", use_llm=False).score.tier == "cold"
+
+
+def test_reason_for_midrange_clarity_is_not_too_blunt():
+    lead = ExtractedLead(
+        need_summary="We need an AI voice receptionist for appointment booking.",
+        service_hints=["svc-ai-automation"],
+    )
+    score = score_lead(lead, [])
+    assert score.breakdown["clarity"] == 15
+    assert "Need is reasonably clear" in " ".join(score.reasons)

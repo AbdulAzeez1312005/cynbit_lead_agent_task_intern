@@ -31,7 +31,7 @@ Code layout: `src/leadagent/{schema,extract,retrieval,scoring,brief,llm,pipeline
 | Model | OpenAI `gpt-4o-mini` by default; optional local Ollama model set with `LEAD_AGENT_PROVIDER=ollama` and `LEAD_AGENT_MODEL` (tested with `qwen3:1.7b`) | OpenAI matches Cynbit's stated stack; Ollama allows local inference without an API key | Larger hosted model for brief quality; GPU-backed local inference |
 | Retrieval | In-memory TF-IDF over about 9 documents | The KB is tiny; a vector DB adds cost and moving parts with no accuracy gain at this size | Pinecone with embeddings once the KB holds case studies, past proposals and pricing notes |
 | Scoring | Deterministic weighted rubric (budget 35, clarity 25, urgency 20, fit 20) | Sales can read and dispute every point; weights can be fitted to conversion data later | LLM-as-judge score (opaque, drifts between runs) |
-| Brief generation | LLM constrained to retrieved excerpts | Reduces fabricated claims | Free generation (rejected) |
+| Brief generation | LLM drafts from retrieved excerpts; template fallback uses fixed service-specific and generic questions | LLM can tailor discovery questions to the lead's workflow and stack (for example, a voice receptionist's booking system and phone setup), while the fallback remains usable offline | Free generation without retrieval grounding (rejected) |
 | Failure handling | Any LLM error returns to the rules path | A lead is never dropped because an API call failed | Hard fail |
 
 ## 3. Data pipeline
@@ -76,7 +76,8 @@ How to read this honestly:
 - **Remaining intent misses (3):** product inquiries that describe the need without naming the product (for example "adaptive coding test platform with mock interviews"). This is a useful case to watch in the LLM comparison.
 - **Rules tier misses (7):** mostly lead-like inquiries scoring one tier off, usually at the 65/40 thresholds, which are untuned guesses.
 - **Local model limits:** the tested 1.7B model underperformed the rules baseline on this dataset, and inference was slow on CPU. A larger model or GPU might change speed or accuracy, but this has not been measured.
-- **Scoring explanation:** clarity remains a simple proxy based on summary length and service hints. The explanation now distinguishes partially specified needs from genuinely limited detail; the rubric still needs calibration with sales reviewers.
+- **Scoring explanation:** clarity remains a simple proxy based on summary length and service hints. A 15/25 score is described as reasonably clear, 10–14 as partly specified, and below 10 as vague. A future rubric could reward concrete action-object details; the current score still needs calibration with sales reviewers.
+- **Discovery questions:** the rules template uses fixed service-specific questions plus generic questions. The LLM prompt asks for five questions tailored to the inquiry and offering. In a local clinic example it asked about call handling, appointment booking, existing tools, and data privacy, though some questions remained generic. This is a key quality difference to assess in a reviewed pilot; drafts still need human review.
 
 ## 6. Execution plan
 

@@ -42,7 +42,7 @@ def process_lead(text: str, use_llm: bool = True) -> LeadReport:
 
     score = score_lead(lead, matches)
     kb_docs = {d["id"]: d["text"] for d in r.docs}
-    brief = (llm.brief_llm(text, lead, matches, kb_docs, score) if use_llm else None) \
+    brief = (llm.brief_llm(text, lead, matches, kb_docs, score, primary) if use_llm else None) \
         or template_brief(text, lead, matches, score, primary)
     return LeadReport(extracted=lead, matches=matches, primary_service=primary,
                       score=score, brief=brief, mode=mode)

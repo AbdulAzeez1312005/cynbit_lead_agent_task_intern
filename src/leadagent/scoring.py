@@ -47,12 +47,12 @@ def score_lead(lead: ExtractedLead, matches: list[KBMatch]) -> ScoreResult:
     words = len(lead.need_summary.split())
     clarity = 5 + min(len(lead.service_hints), 3) * 5 + (5 if words >= 8 else 0)
     b["clarity"] = min(clarity, 25)
-    if b["clarity"] >= 18:
-        reasons.append("Clear, specific need.")
+    if b["clarity"] >= 15:
+        reasons.append("Need is reasonably clear; confirm implementation details.")
     elif b["clarity"] >= 12:
         reasons.append("Need is partially specified; confirm scope details.")
     else:
-        reasons.append("Need details are limited; clarify scope first.")
+        reasons.append("Need is vague; clarify scope first.")
 
     # Urgency (0-20)
     b["urgency"] = {"high": 20, "medium": 14, "unspecified": 6, "low": 2}[lead.urgency]
