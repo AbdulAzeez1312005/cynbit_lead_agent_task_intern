@@ -88,7 +88,7 @@ def parse_budget_inr(text: str) -> Optional[int]:
 
 def parse_urgency(text: str) -> tuple[str, bool]:
     t = text.lower()
-    if re.search(r"\b(asap|urgent|immediately|this week|next week|within (a |\d+ )?(week|weeks|days?)|by (end of )?(this )?month)\b", t):
+    if re.search(r"\b(asap|urgent|immediately|this (week|month)|next (week|month)|start(ing)? (now|today|this month|next month)|within (a |\d+ )?(week|weeks|days?)|by (end of )?(this )?month)\b", t):
         return "high", True
     if re.search(r"\b(within|in|by|over) (the next )?(\d+|a|two|three|four|six) (month|months|quarter)\b|\bq[1-4]\b|\bnext quarter\b", t):
         return "medium", True

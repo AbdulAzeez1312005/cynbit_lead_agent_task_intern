@@ -56,7 +56,7 @@ Results of the **rules pipeline** on the 30 synthetic leads:
 |---|---|
 | Intent accuracy | 27/30 = 90% |
 | Primary service accuracy (27 leads with a service) | 27/27 = 100% |
-| Tier accuracy, exact | 23/30 = 77% |
+| Tier accuracy, exact | 24/30 = 80% |
 | Tier within one step (hot/warm/cold are ordinal) | 30/30 = 100% |
 
 Results of the **local LLM pipeline** on the same 30 leads, using Ollama `qwen3:1.7b` (Q4_K_M) on this CPU-only machine:
@@ -72,10 +72,11 @@ Results of the **local LLM pipeline** on the same 30 leads, using Ollama `qwen3:
 Across the 29 rows that used LLM extraction, intent accuracy was 21/29 = 72%, primary service accuracy was 9/26 = 35%, exact tier accuracy was 11/29 = 38%, and tier within one step was 22/29 = 76%. The all-row figures above include the single rules fallback. The local model scored below the rules baseline on these labels, so this run does not support replacing the rules path. It is also not a fair held-out comparison: all leads are synthetic and the labels were hand assigned by the project author.
 
 How to read this honestly:
-- **Not a held-out test.** I wrote the labels and the rules, and made two changes after seeing the first run (recognise Cynbit product names as product interest; cap very short inquiries at cold). Exact rules tier accuracy moved from 22/30 to 23/30 and intent stayed at 27/30 across those changes. Real accuracy on unseen inquiries will likely be lower.
+- **Not a held-out test.** I wrote the labels and the rules, and changed them after inspecting results: recognise Cynbit product names as product interest, cap very short inquiries at cold, and recognise "this month" / "start this month" as high urgency after a manual app run exposed the miss. Rules tier accuracy moved from 22/30 to 24/30; intent stayed at 27/30. Real accuracy on unseen inquiries will likely be lower.
 - **Remaining intent misses (3):** product inquiries that describe the need without naming the product (for example "adaptive coding test platform with mock interviews"). This is a useful case to watch in the LLM comparison.
 - **Rules tier misses (7):** mostly lead-like inquiries scoring one tier off, usually at the 65/40 thresholds, which are untuned guesses.
 - **Local model limits:** the tested 1.7B model underperformed the rules baseline on this dataset, and inference was slow on CPU. A larger model or GPU might change speed or accuracy, but this has not been measured.
+- **Scoring explanation:** clarity remains a simple proxy based on summary length and service hints. The explanation now distinguishes partially specified needs from genuinely limited detail; the rubric still needs calibration with sales reviewers.
 
 ## 6. Execution plan
 

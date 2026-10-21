@@ -17,6 +17,8 @@ def test_budget_parsing():
 
 def test_urgency():
     assert parse_urgency("need this ASAP")[0] == "high"
+    assert parse_urgency("start this month") == ("high", True)
+    assert parse_urgency("this month") == ("high", True)
     assert parse_urgency("no rush, just exploring")[0] == "low"
 
 

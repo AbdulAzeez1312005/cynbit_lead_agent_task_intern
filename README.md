@@ -36,7 +36,7 @@ $env:LEAD_AGENT_MODEL = "qwen3:1.7b"
 python eval/run_eval.py --llm
 ```
 
-Current rules-baseline results on 30 hand-labelled synthetic leads: intent 90%, primary service 100%, tier 77% exact and 100% within one step. On the same synthetic leads, local Ollama `qwen3:1.7b` achieved intent 73%, primary service 37%, tier 40% exact and 77% within one step; 29 of 30 rows used LLM extraction. These are not held-out results; see the technical report for caveats. The evaluator reports how many rows were actually extracted with an LLM, since unavailable models fall back to rules.
+Current rules-baseline results on 30 hand-labelled synthetic leads: intent 90%, primary service 100%, tier 80% exact and 100% within one step. On the same synthetic leads, local Ollama `qwen3:1.7b` achieved intent 73%, primary service 37%, tier 40% exact and 77% within one step; 29 of 30 rows used LLM extraction. These are not held-out results; see the technical report for caveats. The evaluator reports how many rows were actually extracted with an LLM, since unavailable models fall back to rules.
 
 ## Layout
 ```
