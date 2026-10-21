@@ -26,7 +26,7 @@ Optional Ollama environment defaults are also listed in [.env.example](.env.exam
 ```bash
 python eval/run_eval.py                 # rules-only baseline
 python eval/run_eval.py --mode hybrid   # optional Ollama enrichment and brief; decisions stay rule-owned
-python eval/run_eval.py --data eval/holdout_leads.jsonl  # separate synthetic holdout
+python eval/run_eval.py --data eval/holdout_leads.jsonl  # supplementary synthetic set
 python eval/tune_thresholds.py          # fit cutoffs on eval/leads.jsonl only
 pytest -q
 ```
