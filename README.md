@@ -38,3 +38,8 @@ docs/                   the two reports
 ```
 
 Company facts come from Cynbit's public website; figures Cynbit publishes about itself are treated as claims. Independent candidate work, not affiliated with or endorsed by Cynbit.
+
+## AI assistance
+
+AI tools, including Claude and Codex, assisted with implementation and documentation. The project author is responsible for reviewing the code, evaluation results, and claims before submission.
+
