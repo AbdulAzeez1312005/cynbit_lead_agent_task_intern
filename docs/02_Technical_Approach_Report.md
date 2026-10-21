@@ -50,33 +50,24 @@ Code layout: `src/leadagent/{schema,extract,retrieval,scoring,brief,llm,pipeline
 
 Run `python eval/run_eval.py --mode rules`, `--mode ollama` and `--mode hybrid` after pulling the local model. Ollama-only uses raw extraction; hybrid keeps budget and urgency from deterministic parsers.
 
-Results of the **rules pipeline** on the 30 synthetic leads:
-
-| Metric | Result |
-|---|---|
-| Intent accuracy | 30/30 = 100% |
-| Primary service accuracy (27 leads with a service) | 27/27 = 100% |
-| Tier accuracy, exact | 25/30 = 83% |
-| Tier within one step (hot/warm/cold are ordinal) | 30/30 = 100% |
-
-Ollama-only and hybrid results on the current prompt/code were **not measured**: no Ollama executable or local API was available in this environment. This comparison is incomplete until both modes are run with `qwen3:1.7b` available:
+All modes were run on the same 30 leads with local Ollama `qwen3:1.7b` available. Every row in both LLM modes used model extraction (30/30):
 
 | Metric | Result |
 |---|---|
 | Mode | Intent | Primary service | Tier exact | Tier within one step |
 |---|---:|---:|---:|---:|
 | Rules | 30/30 = 100% | 27/27 = 100% | 25/30 = 83% | 30/30 = 100% |
-| Ollama only | Not measured | Not measured | Not measured | Not measured |
-| Hybrid | Not measured | Not measured | Not measured | Not measured |
+| Ollama only (`qwen3:1.7b`) | 22/30 = 73% | 11/27 = 41% | 10/30 = 33% | 17/30 = 57% |
+| Hybrid (`qwen3:1.7b`) | 22/30 = 73% | 11/27 = 41% | 20/30 = 67% | 28/30 = 93% |
 
-A previous run with an earlier prompt and pipeline measured Ollama `qwen3:1.7b` at 73% intent, 37% primary service, 40% exact tier, and 77% within one step. It is not directly comparable to the current implementation and is historical context only. All leads are synthetic, and labels were assigned by the project author; this is not a held-out test.
+All leads are synthetic, and labels were assigned by the project author; this is not a held-out test. Hybrid keeps model extraction for intent, company and summary while replacing budget and urgency with deterministic parsers. On this set that raised exact tier accuracy from 33% to 67% versus raw Ollama, but remained below the rules baseline's 83%.
 
 How to read this honestly:
 - **Not a held-out test.** I wrote the labels and the rules, then adjusted intent, urgency, clarity, and short-inquiry handling after inspecting examples. Treat these numbers as a smoke check, not an estimate of live accuracy.
 - **Rules intent misses (0 on this version):** this synthetic set now includes product intent from the top product hint. This is likely optimistic because the labels and rules were authored together.
 - **Rules tier misses (5):** remaining misses cluster around the 65/40 thresholds, which are still hand-selected rather than calibrated on independent data.
-- **Local model limits:** the tested 1.7B model underperformed the rules baseline on this dataset, and inference was slow on CPU. A larger model or GPU might change speed or accuracy, but this has not been measured.
-- **Scoring explanation:** clarity remains a simple proxy based on summary length and service hints, with a 5-point bonus when both a service hint and an 8-word summary are present. Scores of 15+ are described as clear, 10–14 as somewhat general, and below 10 as vague. This needs calibration with sales reviewers.
+- **Local model limits:** the tested 1.7B model underperformed the rules baseline on exact tier and intent/service accuracy, and inference was slow on CPU (roughly four minutes per 30-lead run). Hybrid safeguards improve tier performance but do not make the model outperform rules overall. A larger model or GPU might change speed or accuracy, but this has not been measured.
+- **Scoring explanation:** clarity remains a simple proxy based on summary length and service hints, with a 5-point bonus when both a service hint and an 8-word summary are present. Scores of 15+ are described as clear, 10 to 14 as somewhat general, and below 10 as vague. This needs calibration with sales reviewers.
 - **Discovery questions:** the rules template uses fixed service-specific questions plus generic questions. The LLM prompt asks for five questions tailored to the inquiry and offering. In a local clinic example it asked about call handling, appointment booking, existing tools, and data privacy, though some questions remained generic. This is a key quality difference to assess in a reviewed pilot; drafts still need human review.
 
 ## 6. Execution plan
@@ -84,7 +75,7 @@ How to read this honestly:
 | Phase | Work | Output |
 |---|---|---|
 | 0 (done) | KB, pipeline, rubric, Streamlit demo, 30-lead eval | This repo |
-| 1 (week 1) | Run `--llm` eval, tune thresholds, add embeddings for retrieval, error and latency logging | Measured LLM vs. rules comparison |
+| 1 (week 1) | Create a genuinely held-out evaluation set, calibrate thresholds with sales data, add embeddings, error and latency logging | Independent evaluation and production readiness |
 | 2 (weeks 2-3) | FastAPI service, contact-form webhook, CRM write-back (draft only), human accept/override buttons | Pilot on real inquiries |
 | 3 (weeks 4-6) | Collect override data, refit scoring weights, proposal-outline generation, hot-lead Slack alert | Calibrated scoring |
 | 4 | Package as a client offering, reuse for BitElevate applicants | Product/service |

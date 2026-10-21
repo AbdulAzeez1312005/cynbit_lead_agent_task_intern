@@ -38,7 +38,7 @@ python eval/run_eval.py --mode ollama
 python eval/run_eval.py --mode hybrid
 ```
 
-Current rules-baseline results on 30 hand-labelled synthetic leads: intent 100%, primary service 100%, tier 83% exact and 100% within one step. These are not held-out results. Current Ollama-only and hybrid results were not measured in this environment because the local Ollama server/model is unavailable. The evaluator reports how many rows actually used LLM extraction, since unavailable models fall back to rules.
+Results on the same 30 hand-labelled synthetic leads: rules — intent 100%, primary service 100%, tier 83% exact / 100% within one step; Ollama-only (`qwen3:1.7b`) — 73%, 41%, 33% / 57%; hybrid — 73%, 41%, 67% / 93%. These are not held-out results; see the technical report for limitations. The evaluator reports how many rows actually used LLM extraction and refuses to run model metrics if the selected Ollama model is unavailable.
 
 ## Layout
 ```
