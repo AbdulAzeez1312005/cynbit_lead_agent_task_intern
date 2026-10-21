@@ -31,9 +31,13 @@ def main() -> None:
     rows = [json.loads(l) for l in (ROOT / "eval" / "leads.jsonl").read_text().splitlines() if l.strip()]
     n = len(rows)
     intent_ok = tier_ok = tier_near = svc_ok = svc_n = 0
+    llm_rows = 0
     results = []
     for row in rows:
+        if args.verbose:
+            print(f"processing lead #{row['id']}", flush=True)
         rep = process_lead(row["text"], use_llm=args.llm)
+        llm_rows += rep.mode == "llm"
         i_ok = rep.extracted.intent == row["intent"]
         t_ok = rep.score.tier == row["tier"]
         near = abs(ORDER[rep.score.tier] - ORDER[row["tier"]]) <= 1
@@ -45,7 +49,8 @@ def main() -> None:
         intent_ok += i_ok
         tier_ok += t_ok
         tier_near += near
-        results.append({"id": row["id"], "intent_ok": i_ok, "tier_ok": t_ok, "service_ok": s_ok,
+        results.append({"id": row["id"], "mode": rep.mode,
+                        "intent_ok": i_ok, "tier_ok": t_ok, "service_ok": s_ok,
                         "pred_tier": rep.score.tier, "pred_score": rep.score.total,
                         "pred_service": rep.primary_service, "pred_intent": rep.extracted.intent})
         if args.verbose and not (i_ok and t_ok and s_ok in (True, None)):
@@ -55,6 +60,8 @@ def main() -> None:
 
     mode = "llm" if args.llm else "rules"
     print(f"mode={mode}  n={n}")
+    if args.llm:
+        print(f"LLM extraction used:     {llm_rows}/{n}")
     print(f"intent accuracy:          {intent_ok}/{n} = {intent_ok / n:.0%}")
     print(f"primary service accuracy: {svc_ok}/{svc_n} = {svc_ok / svc_n:.0%}")
     print(f"tier accuracy (exact):    {tier_ok}/{n} = {tier_ok / n:.0%}")

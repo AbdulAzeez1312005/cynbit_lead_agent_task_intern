@@ -10,22 +10,33 @@ An agent that turns a messy inbound inquiry into structured fields, matches it t
 ## Setup
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
+python -m venv .venv
+# macOS/Linux: source .venv/bin/activate
+# Windows PowerShell: .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Optional LLM mode: `export OPENAI_API_KEY=...` (and optionally `LEAD_AGENT_MODEL`, default `gpt-4o-mini`). Without a key the app runs the offline rules pipeline, so it always works.
+Optional LLM mode with OpenAI: set `OPENAI_API_KEY` (and optionally `LEAD_AGENT_MODEL`, default `gpt-4o-mini`). Or install [Ollama](https://ollama.com/download), pull a model with `ollama pull qwen3:1.7b`, then set `LEAD_AGENT_PROVIDER=ollama` and optionally `LEAD_AGENT_MODEL=qwen3:1.7b` before launching. The default model for Ollama is `qwen3:1.7b`; the local Ollama server must be running. Without a configured LLM provider the app runs the offline rules pipeline, so it always works.
 
 ## Evaluate
 
 ```bash
 python eval/run_eval.py --verbose        # rules baseline
-python eval/run_eval.py --llm            # needs OPENAI_API_KEY
+python eval/run_eval.py --llm            # OpenAI key, or LEAD_AGENT_PROVIDER=ollama with a local model
 pytest -q
 ```
 
-Current rules-baseline results on 30 hand-labelled synthetic leads: intent 90%, primary service 100%, tier 77% exact and 100% within one step. These are not held-out results; see the technical report for caveats. LLM mode has not yet been evaluated.
+For local Ollama evaluation in PowerShell:
+
+```powershell
+ollama pull qwen3:1.7b
+$env:LEAD_AGENT_PROVIDER = "ollama"
+$env:LEAD_AGENT_MODEL = "qwen3:1.7b"
+python eval/run_eval.py --llm
+```
+
+Current rules-baseline results on 30 hand-labelled synthetic leads: intent 90%, primary service 100%, tier 77% exact and 100% within one step. On the same synthetic leads, local Ollama `qwen3:1.7b` achieved intent 73%, primary service 37%, tier 40% exact and 77% within one step; 29 of 30 rows used LLM extraction. These are not held-out results; see the technical report for caveats. The evaluator reports how many rows were actually extracted with an LLM, since unavailable models fall back to rules.
 
 ## Layout
 ```

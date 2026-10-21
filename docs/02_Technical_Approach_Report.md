@@ -6,7 +6,7 @@
  inquiry text
       |
       v
- [1 Extract]  --LLM structured output (OpenAI, JSON schema) --or-- rules fallback
+ [1 Extract]  --LLM structured output (OpenAI or local Ollama, JSON schema) --or-- rules fallback
       |        company, intent, budget_inr, urgency, service_hints
       v
  [2 Retrieve] TF-IDF over Cynbit knowledge base (services, products, BitElevate, process)
@@ -28,7 +28,7 @@ Code layout: `src/leadagent/{schema,extract,retrieval,scoring,brief,llm,pipeline
 | Decision | Choice | Reason | Alternative considered |
 |---|---|---|---|
 | Extraction | LLM with a pydantic JSON schema, rule-based fallback | Structured output gives validated fields; fallback keeps the demo working offline and gives a baseline to beat | Pure rules (brittle on messy text), pure LLM (no offline path) |
-| Model | `gpt-4o-mini` by default, set via `LEAD_AGENT_MODEL` | Cheap and fast for short extraction and drafting; OpenAI is already in Cynbit's stated stack. Any model with structured outputs can replace it | Larger model for brief quality, to be tested |
+| Model | OpenAI `gpt-4o-mini` by default; optional local Ollama model set with `LEAD_AGENT_PROVIDER=ollama` and `LEAD_AGENT_MODEL` (tested with `qwen3:1.7b`) | OpenAI matches Cynbit's stated stack; Ollama allows local inference without an API key | Larger hosted model for brief quality; GPU-backed local inference |
 | Retrieval | In-memory TF-IDF over about 9 documents | The KB is tiny; a vector DB adds cost and moving parts with no accuracy gain at this size | Pinecone with embeddings once the KB holds case studies, past proposals and pricing notes |
 | Scoring | Deterministic weighted rubric (budget 35, clarity 25, urgency 20, fit 20) | Sales can read and dispute every point; weights can be fitted to conversion data later | LLM-as-judge score (opaque, drifts between runs) |
 | Brief generation | LLM constrained to retrieved excerpts | Reduces fabricated claims | Free generation (rejected) |
@@ -48,7 +48,7 @@ Code layout: `src/leadagent/{schema,extract,retrieval,scoring,brief,llm,pipeline
 
 ## 5. Evaluation
 
-Run: `python eval/run_eval.py --verbose` (add `--llm` with an API key).
+Run: `python eval/run_eval.py --verbose` for rules. For LLM mode, set `OPENAI_API_KEY` or set `LEAD_AGENT_PROVIDER=ollama` and pull a local model, then run `python eval/run_eval.py --llm`.
 
 Results of the **rules pipeline** on the 30 synthetic leads:
 
@@ -59,11 +59,23 @@ Results of the **rules pipeline** on the 30 synthetic leads:
 | Tier accuracy, exact | 23/30 = 77% |
 | Tier within one step (hot/warm/cold are ordinal) | 30/30 = 100% |
 
+Results of the **local LLM pipeline** on the same 30 leads, using Ollama `qwen3:1.7b` (Q4_K_M) on this CPU-only machine:
+
+| Metric | Result |
+|---|---|
+| Intent accuracy | 22/30 = 73% |
+| Primary service accuracy (27 leads with a service) | 10/27 = 37% |
+| Tier accuracy, exact | 12/30 = 40% |
+| Tier within one step | 23/30 = 77% |
+| LLM extraction used | 29/30; one lead fell back to rules |
+
+Across the 29 rows that used LLM extraction, intent accuracy was 21/29 = 72%, primary service accuracy was 9/26 = 35%, exact tier accuracy was 11/29 = 38%, and tier within one step was 22/29 = 76%. The all-row figures above include the single rules fallback. The local model scored below the rules baseline on these labels, so this run does not support replacing the rules path. It is also not a fair held-out comparison: all leads are synthetic and the labels were hand assigned by the project author.
+
 How to read this honestly:
-- **Not a held-out test.** I wrote the labels and the rules, and made two changes after seeing the first run (recognise Cynbit product names as product interest; cap very short inquiries at cold). Exact tier accuracy moved from 22/30 to 23/30 and intent stayed at 27/30 across those changes. Real accuracy on unseen inquiries will likely be lower.
-- **Remaining intent misses (3):** product inquiries that describe the need without naming the product (for example "adaptive coding test platform with mock interviews"). An LLM extractor should handle these better; this is the main reason the LLM path exists.
-- **Tier misses (7):** mostly lead-like inquiries scoring one tier off, usually at the 65/40 thresholds, which are untuned guesses.
-- **LLM mode has not been evaluated.** The environment this was built in had no API key or package access, so only the rules path was run. The LLM code path is written but untested end to end; run the eval with `--llm` before relying on it.
+- **Not a held-out test.** I wrote the labels and the rules, and made two changes after seeing the first run (recognise Cynbit product names as product interest; cap very short inquiries at cold). Exact rules tier accuracy moved from 22/30 to 23/30 and intent stayed at 27/30 across those changes. Real accuracy on unseen inquiries will likely be lower.
+- **Remaining intent misses (3):** product inquiries that describe the need without naming the product (for example "adaptive coding test platform with mock interviews"). This is a useful case to watch in the LLM comparison.
+- **Rules tier misses (7):** mostly lead-like inquiries scoring one tier off, usually at the 65/40 thresholds, which are untuned guesses.
+- **Local model limits:** the tested 1.7B model underperformed the rules baseline on this dataset, and inference was slow on CPU. A larger model or GPU might change speed or accuracy, but this has not been measured.
 
 ## 6. Execution plan
 
