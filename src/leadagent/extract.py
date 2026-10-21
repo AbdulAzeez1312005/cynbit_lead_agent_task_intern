@@ -104,6 +104,9 @@ def classify_intent(text: str) -> str:
         return "student_program"
     if _PRODUCT.search(text):
         return "product_interest"
+    hints = service_hints(text)
+    if hints and hints[0].startswith("prod-"):
+        return "product_interest"
     t = text.lower()
     # Naming one of Cynbit's own products is a strong signal the lead wants the product,
     # not a bespoke build.
