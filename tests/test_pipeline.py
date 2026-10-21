@@ -71,6 +71,11 @@ def test_vague_is_cold():
     assert process_lead("Need a website.", use_llm=False).score.tier == "cold"
 
 
+def test_service_discovery_question_bank_is_specific():
+    from leadagent.brief import service_discovery_questions
+    assert "How many properties and tenants do you manage?" in service_discovery_questions("prod-tenantease")
+
+
 def test_reason_for_midrange_clarity_is_not_too_blunt():
     lead = ExtractedLead(
         need_summary="We need an AI voice receptionist for appointment booking.",

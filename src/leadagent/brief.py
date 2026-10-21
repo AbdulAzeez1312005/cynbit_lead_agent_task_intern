@@ -29,6 +29,11 @@ _QUESTIONS = {
 _GENERIC = ["What is the budget range and decision timeline?", "Who else is involved in the decision?"]
 
 
+def service_discovery_questions(primary: str | None) -> list[str]:
+    """Return offering-specific question prompts for the brief drafter."""
+    return list(_QUESTIONS.get(primary or "", []))
+
+
 def template_brief(text: str, lead: ExtractedLead, matches: list[KBMatch],
                    score: ScoreResult, primary: str | None) -> str:
     top = matches[0] if matches else None

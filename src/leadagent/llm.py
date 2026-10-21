@@ -9,6 +9,7 @@ import re
 from typing import Optional
 
 from .schema import ExtractedLead, KBMatch, ScoreResult
+from .brief import service_discovery_questions
 
 PROVIDER = os.getenv("LEAD_AGENT_PROVIDER", "openai").lower()
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
@@ -37,10 +38,11 @@ BRIEF_SYSTEM = (
     "the facts in the lead data and the knowledge-base excerpts provided. Never invent prices, "
     "timelines, client names or capabilities that are not in the excerpts. Sections: Summary, "
     "What they need, Recommended Cynbit offering (with reason), Risks and unknowns, "
-    "5 discovery questions tailored to this inquiry and offering. Reuse concrete actions and "
+    "discovery questions tailored to this inquiry and offering. Use the supplied service-specific "
+    "questions as the base, preserve the useful ones, and add only one or two more. Reuse concrete actions and "
     "objects named in the inquiry; ask about the relevant workflow, current tools or integrations, "
     "constraints, and success criteria. Do not ask again for a budget or deadline already stated; "
-    "avoid generic questions. "
+        "avoid generic questions. Return 3 to 5 questions total. "
     "Use the pipeline-selected offering as the recommendation. Do not substitute another Cynbit "
     "product. Do not describe a need as vague when the score reasons say it is clear; "
     "state unresolved scope details without contradicting that assessment. "
@@ -132,6 +134,7 @@ def brief_llm(text: str, lead: ExtractedLead, matches: list[KBMatch],
         f"Score: {score.total}/100 ({score.tier}); breakdown: {score.breakdown}; "
         f"reasons: {'; '.join(score.reasons)}\n"
         f"Pipeline-selected offering: {primary_service or 'none'}\n"
+        f"Service-specific discovery questions to use as a base: {service_discovery_questions(primary_service)}\n"
         f"Selected-offering facts: {selected_excerpt}\n"
         f"Knowledge base excerpts:\n{excerpts}"
     )
