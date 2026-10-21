@@ -23,6 +23,11 @@ def test_company_extraction_rejects_product_names():
     assert extract_company("We are from PDF into Tally") is None
 
 
+def test_company_stops_at_sentence_end():
+    assert extract_company("I'm Priya from Green Leaf Hotels. We manage 5 hotels.") == "Green Leaf Hotels"
+    assert extract_company("I'm the owner of Sharma Dental Care. We have three clinics.") == "Sharma Dental Care"
+
+
 def test_urgency():
     assert parse_urgency("need this ASAP")[0] == "high"
     assert parse_urgency("start this month") == ("high", True)

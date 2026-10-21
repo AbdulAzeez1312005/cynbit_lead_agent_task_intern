@@ -138,7 +138,7 @@ def service_hints(text: str) -> list[str]:
 def extract_company(text: str) -> Optional[str]:
     m = re.search(r"(?:from|at|with|of|represent(?:ing)?|founder of|ceo of|cto of)\s+([A-Z][\w&.\-]+(?:\s+[A-Z][\w&.\-]+){0,3})", text)
     if m:
-        name = m.group(1).strip(" .,")
+        name = re.split(r"[.!?]\s", m.group(1))[0].strip(" .,")
         if name.split()[0].lower() not in _NOT_COMPANY:
             return name
     return None
